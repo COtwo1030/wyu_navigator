@@ -1,14 +1,15 @@
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 
 from app.dependences import get_hash_password
-from app.crud.auth import UserCRUD
 from app.shemas.auth import RegisterData
+from app.crud.auth import UserCRUD
 
 class UserService:
-    def __init__(self, user_crud: UserCRUD = Depends()):
-        self.user_crud = user_crud
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.user_crud = UserCRUD(session)
 
     async def register_user(self, data: RegisterData):
         """

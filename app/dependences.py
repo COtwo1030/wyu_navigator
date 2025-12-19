@@ -2,12 +2,12 @@ from pwdlib import PasswordHash
 from app.database import AsyncSessionLocal
 
 # 数据库依赖项
-async def get_db():
-    db = AsyncSessionLocal()
+async def get_session():
+    session = AsyncSessionLocal()
     try:
-        yield db
+        yield session
     finally:
-        await db.close()
+        await session.close()
 
 # 哈希依赖项
 password_hash = PasswordHash.recommended()

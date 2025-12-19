@@ -1,15 +1,13 @@
-from datetime import datetime
-from fastapi import Depends  
+from datetime import datetime 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.dependences import get_db
 from app.shemas.auth import RegisterData
 from app.models.auth import User
 
 class UserCRUD:
-    def __init__(self, db: AsyncSession = Depends(get_db)):
-        self.db = db
+    def __init__(self, session: AsyncSession):
+        self.session = session
     
     async def is_email_registered(self, email: str) -> bool:
         """
@@ -19,7 +17,7 @@ class UserCRUD:
         返回:
             bool
         """
-        user = await self.db.execute(
+        user = await self.session.execute(
             select(User).filter(User.email == email)
         )
         return user.scalar() is not None
@@ -38,7 +36,7 @@ class UserCRUD:
             hashed_password=data.password,
             create_time=datetime.now()
         )
-        self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
         return user
