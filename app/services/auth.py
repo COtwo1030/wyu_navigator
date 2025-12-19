@@ -8,7 +8,7 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from aiosmtplib.errors import SMTPException
 
 from app.dependences import get_hash_password, verify_password
-from app.shemas.auth import RegisterData, LoginData
+from app.shemas.auth import RegisterData, LoginData, ResetPasswordData
 from app.crud.auth import UserCRUD, EmailCodeCRUD
 import app.settings as settings
 
@@ -66,6 +66,33 @@ class UserService:
         
         logger.success(f"用户注册成功: email={data.email}, id={new_user.id}")
         return {"message": "注册成功"}
+    
+    async def reset_password(self, data: ResetPasswordData):
+        """
+        重置用户密码
+        参数:
+            data: ResetPasswordData
+        返回:
+            dict: {"message": "密码重置成功"}
+        """
+        # 查询邮箱是否存在
+        if not await UserCRUD(self.session).is_email_registered(email=data.email):
+            logger.warning(f"重置密码失败: 邮箱不存在 - {data.email}")
+            raise HTTPException(status_code=400, detail="邮箱不存在")
+        # 查询验证码是否存在
+        EmailCode = await EmailCodeCRUD(self.session).search_code(email=data.email, code=data.code)
+        if EmailCode is None:
+            logger.warning(f"重置密码失败: 验证码错误或不存在 - {data.email}")
+            raise HTTPException(status_code=400, detail="验证码错误或不存在")
+        # 检查验证码是否过期
+        if (datetime.now() - EmailCode.create_time).seconds > 600:
+            logger.warning(f"重置密码失败: 验证码过期 - {data.email}")
+            raise HTTPException(status_code=400, detail="验证码过期")
+        # 更新密码
+        hashed_password = await get_hash_password(data.password)
+        await UserCRUD(self.session).reset_user_password(email=data.email, hashed_password=hashed_password)
+        logger.success(f"用户密码重置成功: email={data.email}")
+        return {"message": "密码重置成功"}
 
 class EmailCodeService:
     def __init__(self, session: AsyncSession):

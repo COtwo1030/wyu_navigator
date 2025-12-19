@@ -3,10 +3,8 @@ from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependences import get_session
-from app.shemas.auth import RegisterData, LoginData
+from app.shemas.auth import RegisterData, LoginData, ResetPasswordData
 from app.services.auth import UserService, EmailCodeService
-from app.services.point import PointService
-from app.shemas.point import PointData
 
 router = APIRouter(prefix="/auth",tags=["auth"])
 
@@ -25,7 +23,7 @@ async def register(data: RegisterData, session: AsyncSession = Depends(get_sessi
 async def get_code(email: EmailStr, session: AsyncSession = Depends(get_session)):
     return await EmailCodeService(session).send_and_stock_code(email)
 
-# 添加地点
-@router.post("/point", status_code=200,description="添加地点")
-async def add_point(data: PointData, session: AsyncSession = Depends(get_session)):
-    return await PointService(session).add_point(data)
+# 重置密码
+@router.post("/reset-password", status_code=200,description="重置密码")
+async def reset_password(data: ResetPasswordData, session: AsyncSession = Depends(get_session)):
+    return await UserService(session).reset_password(data)

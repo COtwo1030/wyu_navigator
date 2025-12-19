@@ -39,6 +39,25 @@ class UserCRUD:
         self.session.add(user)
         await self.session.commit()
         return user
+    async def reset_user_password(self, email: str, hashed_password: str):
+        """
+        重置用户密码
+        参数:
+            email: 邮箱
+            hashed_password: 新哈希密码
+        返回:
+            None
+        """
+        # 根据邮箱更新用户密码
+        try:
+            await self.session.execute(
+                User.__table__.update()
+                .where(User.email == email)
+                .values(hashed_password=hashed_password)
+            )
+            await self.session.commit()
+        except:
+            return None
 
     async def search_user_hashed_password(self, email: str) -> str|None:
         """
