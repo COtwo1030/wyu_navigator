@@ -31,7 +31,7 @@
 							<input 
 								type="number" 
 								v-model="code" 
-								placeholder="6 位验证码" 
+								placeholder="4 位验证码" 
 								@focus="active = 'code'" 
 								@blur="active = ''"
 							/>

@@ -69,13 +69,11 @@ class UserCRUD:
             不存在：None
         """
         # 根据邮箱查询对应用户哈希密码
-        try:
-            user = await self.session.execute(
-                select(User).filter(User.email == email)
-            )
-        except:
-            return None
-        return user.scalar().hashed_password
+        user = await self.session.execute(
+            select(User).filter(User.email == email)
+        )
+        user_obj = user.scalar()
+        return user_obj.hashed_password if user_obj else None
 
 class EmailCodeCRUD:
     def __init__(self, session: AsyncSession):
