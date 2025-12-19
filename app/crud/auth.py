@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.shemas.auth import RegisterData
-from app.models.auth import User
+from app.models.auth import User, EmailCode
 
 class UserCRUD:
     def __init__(self, session: AsyncSession):
@@ -38,5 +38,60 @@ class UserCRUD:
         )
         self.session.add(user)
         await self.session.commit()
-        await self.session.refresh(user)
         return user
+
+    async def search_user_hashed_password(self, email: str) -> str|None:
+        """
+        查询用户哈希密码
+        参数:
+            email: 邮箱
+        返回:
+            存在：用户哈希密码
+            不存在：None
+        """
+        # 根据邮箱查询对应用户哈希密码
+        try:
+            user = await self.session.execute(
+                select(User).filter(User.email == email)
+            )
+        except:
+            return None
+        return user.scalar().hashed_password
+
+class EmailCodeCRUD:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+    async def create_verification_code(self, email: str, code: str):
+        """
+        创建邮箱验证码
+        参数:
+            email: 邮箱
+            code: 验证码
+        返回:
+            None
+        """
+        email_code = EmailCode(
+            email=email,
+            code=code,
+            create_time=datetime.now()
+        )
+        self.session.add(email_code)
+        await self.session.commit()
+    
+    async def search_code(self, email: str, code: str) -> EmailCode|None:
+        """
+        查询验证码是否存在
+        参数:
+            email: 邮箱
+            code: 验证码
+        返回:
+            存在：EmailCode
+            不存在：None
+        """
+        try:
+            email_code = await self.session.execute(
+                select(EmailCode).filter(EmailCode.email == email, EmailCode.code == code)
+            )
+        except:
+            return None
+        return email_code.scalar()

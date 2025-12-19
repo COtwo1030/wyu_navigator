@@ -12,7 +12,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-base_prefix = "/api/v1" # 基础路径
 app.include_router(auth.router)
 
 @app.get("/")

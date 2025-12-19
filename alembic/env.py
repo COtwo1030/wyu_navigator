@@ -9,7 +9,7 @@ from alembic import context
 
 from app.settings import ASYNC_DB_URL
 from app.models.base import Base
-from app.models.auth import User
+from app.models.auth import User, EmailCode
 from app.models.point import Point
 
 # this is the Alembic Config object, which provides
