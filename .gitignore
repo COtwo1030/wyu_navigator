@@ -28,5 +28,3 @@ Thumbs.db
 htmlcov/
 .coverage
 
-# 配置文件
-#settings.py
