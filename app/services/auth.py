@@ -15,7 +15,6 @@ import app.settings as settings
 class UserService:
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.user_crud = UserCRUD(session)
 
     async def user_login(self, data: LoginData):
         """
@@ -26,7 +25,7 @@ class UserService:
             dict: {"message": "登录成功"}
         """
         # 根据邮箱获取数据库中的密码
-        db_hashed_password = await self.user_crud.search_user_hashed_password(email=data.email)
+        db_hashed_password = await UserCRUD(self.session).search_user_hashed_password(email=data.email)
         if db_hashed_password is None:
             logger.warning(f"登录失败: 邮箱不存在 - {data.email}")
             raise HTTPException(status_code=400, detail="邮箱不存在")
@@ -49,8 +48,7 @@ class UserService:
         logger.info(f"开始处理用户注册: email={data.email}, username={data.username}")
         
         # 查询验证码
-        email_code_crud = EmailCodeCRUD(self.session)
-        EmailCode = await email_code_crud.search_code(email=data.email, code=data.code)
+        EmailCode = await EmailCodeCRUD(self.session).search_code(email=data.email, code=data.code)
         if EmailCode is None:
             logger.warning(f"注册失败: 验证码错误或不存在 - {data.email}")
             raise HTTPException(status_code=400, detail="验证码错误或不存在")
@@ -59,12 +57,12 @@ class UserService:
             logger.warning(f"注册失败: 验证码过期 - {data.email}")
             raise HTTPException(status_code=400, detail="验证码过期")
         # 邮箱是否已注册
-        if await self.user_crud.is_email_registered(email=data.email):
+        if await UserCRUD(self.session).is_email_registered(email=data.email):
             logger.warning(f"注册失败: 邮箱已存在 - {data.email}")
             raise HTTPException(status_code=400, detail="邮箱已注册")
         # 创建用户
         data.password = await get_hash_password(data.password) # 对密码进行哈希处理
-        new_user = await self.user_crud.create_user(data)
+        new_user = await UserCRUD(self.session).create_user(data)
         
         logger.success(f"用户注册成功: email={data.email}, id={new_user.id}")
         return {"message": "注册成功"}

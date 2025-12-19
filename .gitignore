@@ -27,3 +27,6 @@ Thumbs.db
 # 覆盖率报告 (如果有测试)
 htmlcov/
 .coverage
+
+# 配置文件
+#settings.py

@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependences import get_session
 from app.shemas.auth import RegisterData, LoginData
 from app.services.auth import UserService, EmailCodeService
+from app.services.point import PointService
+from app.shemas.point import PointData
 
 router = APIRouter(prefix="/auth",tags=["auth"])
 
@@ -22,3 +24,8 @@ async def register(data: RegisterData, session: AsyncSession = Depends(get_sessi
 @router.post("/code", status_code=200,description="获取邮箱验证码")
 async def get_code(email: EmailStr, session: AsyncSession = Depends(get_session)):
     return await EmailCodeService(session).send_and_stock_code(email)
+
+# 添加地点
+@router.post("/point", status_code=200,description="添加地点")
+async def add_point(data: PointData, session: AsyncSession = Depends(get_session)):
+    return await PointService(session).add_point(data)
