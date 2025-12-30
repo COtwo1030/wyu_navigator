@@ -31,6 +31,10 @@
 </template>
 
 <script>
+	let mapInst = null;
+	let markersInst = null;
+	let poiMarkersInst = null;
+	let routeLayerInst = null;
 	export default {
 		data() {
 			return {
@@ -79,35 +83,56 @@
 					new TMap.LatLng(22.612047,113.108468)
 				);
 
-				this.map = new TMap.Map('container', {
+				mapInst = new TMap.Map('container', {
 					center: center,
 					zoom: 16,
-					boundary: boundary ,// 限制地图显示范围
-					baseMap: {			//底图设置（参数为：VectorBaseMap对象）
-						  type: 'vector',	//类型：失量底图
-						  features: ['base', 'building2d'
-					]  
-						  //仅渲染：道路及底面(base) + 2d建筑物(building2d)，以达到隐藏文字的效果
-						}
+					boundary: boundary,
+					baseMap: { features: ['base', 'building3d'] }
 				});
+
+
 
 				// 创建个性化图层
 				TMap.ImageTileLayer.createCustomLayer({
 					layerId: '693674ac4012',
-					map: this.map // 绑定到当前地图实例
+					map: mapInst
 				}).then((customLayer) => {
-					if (customLayer) {
-						console.log('个性化图层创建成功');
-					} else {
-						console.log('个性化图层创建失败');
-					}
+					console.log('个性化图层创建成功');
 				}).catch(err => {
 					console.error('个性化图层加载错误:', err);
 				});
 
 				// 初始化点标记图层 (用于显示搜索结果)
-				this.markers = new TMap.MultiMarker({
-					map: this.map
+				markersInst = new TMap.MultiMarker({
+					map: mapInst
+				});
+				
+				uni.request({
+					url: 'http://127.0.0.1:8080/point/list',
+					method: 'GET',
+					success: (res) => {
+						const points = (res.data && res.data.points) || [];
+						const geometries = [];
+						for (let i = 0; i < points.length; i++) {
+							const p = points[i];
+							if (typeof p.x === 'number' && typeof p.y === 'number' && p.y >= -90 && p.y <= 90 && p.x >= -180 && p.x <= 180) {
+								geometries.push({
+									id: String(p.id),
+									position: new TMap.LatLng(p.y, p.x),
+									content: p.name
+								});
+							}
+						}
+						markersInst.setGeometries(geometries);
+						if (geometries.length) {
+							const bounds = new TMap.LatLngBounds();
+							geometries.forEach(g => bounds.extend(g.position));
+							mapInst.fitBounds(bounds);
+						}
+					},
+					fail: () => {
+						uni.showToast({ title: '地点加载失败', icon: 'none' });
+					}
 				});
 			},
 			search() {
@@ -153,18 +178,18 @@
 					}
 				}));
 				
-				this.markers.setGeometries(geometries);
+				markersInst.setGeometries(geometries);
 				
 				// 自动调整地图视野以显示所有标记
-				if (data.length > 0) {
-					const bounds = new TMap.LatLngBounds();
-					data.forEach(item => bounds.extend(item.location));
-					this.map.fitBounds(bounds);
-				}
+					if (data.length > 0) {
+						const bounds = new TMap.LatLngBounds();
+						data.forEach(item => bounds.extend(item.location));
+						mapInst.fitBounds(bounds);
+					}
 			},
 			selectLocation(item) {
 				// 点击列表项，移动地图中心到该位置
-				this.map.setCenter(item.location);
+				mapInst.setCenter(item.location);
 			},
 			startNavigation(item) {
 				// 从搜索结果切换到导航模式，并预填终点
@@ -269,7 +294,7 @@
 						// 调整视野以展示整条路线
 						const bounds = new TMap.LatLngBounds();
 						route.polyline.forEach(point => bounds.extend(point));
-						this.map.fitBounds(bounds, { padding: 80 });
+						mapInst.fitBounds(bounds, { padding: 80 });
 						
 						// 隐藏结果列表以清晰显示地图
 						this.results = [];
@@ -283,37 +308,25 @@
 				});
 			},
 			drawRoute(path) {
-				if (this.routeLayer) {
-					this.routeLayer.setGeometries([]); // 清空旧路线
-					this.routeLayer.destroy(); // 销毁旧图层
+					if (routeLayerInst) {
+						routeLayerInst.setGeometries([]);
+						routeLayerInst.destroy();
+					}
+					routeLayerInst = new TMap.MultiPolyline({
+						id: 'route-layer',
+						map: mapInst,
+						styles: {
+							'route': new TMap.PolylineStyle({ color: '#3777FF', width: 6, borderWidth: 2, borderColor: '#FFF', lineCap: 'round' })
+						},
+						geometries: [{ id: 'route', styleId: 'route', paths: path }]
+					});
 				}
-				
-				// 创建新的路线折线图层
-				this.routeLayer = new TMap.MultiPolyline({
-					id: 'route-layer',
-					map: this.map,
-					styles: {
-						'route': new TMap.PolylineStyle({
-							color: '#3777FF', // 路线颜色
-							width: 6,         // 路线宽度
-							borderWidth: 2,   // 描边宽度
-							borderColor: '#FFF', // 描边颜色
-							lineCap: 'round'  // 线头样式
-						})
-					},
-					geometries: [{
-						id: 'route',
-						styleId: 'route',
-						paths: path
-					}]
-				});
-			}
 		},
 		onUnload() {
 			// 页面卸载时销毁地图实例，防止内存泄漏
-			if (this.map) {
-				this.map.destroy();
-				this.map = null;
+			if (mapInst) {
+				mapInst.destroy();
+				mapInst = null;
 			}
 		}
 	}

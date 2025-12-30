@@ -30,5 +30,6 @@ class PointService:
         # 获取所有地点（一定按id排序）
         points = await PointCRUD(self.session).get_points()
         points = [{"id": p.id, "x": p.x, "y": p.y, "name": p.name} for p in points]
+        logger.info(f"地点获取成功，共 {len(points)} 个地点")
         return {"message": "获取成功", "points": points}
     
