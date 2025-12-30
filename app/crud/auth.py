@@ -74,6 +74,20 @@ class UserCRUD:
         )
         user_obj = user.scalar()
         return user_obj.hashed_password if user_obj else None
+    async def search_username(self, email: str) -> str|None:
+        """
+        查询邮箱对应的用户名
+        参数:
+            email: 邮箱
+        返回:
+            存在：用户名
+            不存在：None
+        """
+        # 根据邮箱查询对应用户名
+        user = await self.session.execute(
+            select(User.username).filter(User.email == email)
+        )
+        return user.scalar()
 
 class EmailCodeCRUD:
     def __init__(self, session: AsyncSession):

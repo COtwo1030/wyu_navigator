@@ -1,6 +1,13 @@
 {
 	"pages": [
 		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom" ,
+				"navigationBarTitleText": "uni-app"
+			}
+		},
+		{
 			"path": "pages/login/login",
 			"style": {
 				"navigationStyle": "custom" ,
@@ -19,13 +26,6 @@
 			"style": {
 				"navigationStyle": "custom" ,
 				"navigationBarTitleText": "重置密码"
-			}
-		},
-		{
-			"path": "pages/index/index",
-			"style": {
-				"navigationStyle": "custom" ,
-				"navigationBarTitleText": "uni-app"
 			}
 		}
 	],

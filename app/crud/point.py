@@ -30,3 +30,14 @@ class PointCRUD:
         self.session.add(point)
         await self.session.commit()
     
+    async def get_points(self) -> list[PointData]:
+        """
+        获取所有地点
+        参数：
+            无
+        返回值：
+            list[PointData]
+        """
+        result = await self.session.execute(select(Point).order_by(Point.id.asc()))
+        points = result.scalars().all()
+        return points

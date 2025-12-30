@@ -17,3 +17,18 @@ class PointService:
         logger.info(f"地点 {data.name} 添加成功")
         return {"message": "地点添加成功"}
     
+    async def get_points(self) -> list[PointData]:
+        """
+        获取所有地点
+        参数：
+            无
+        返回值：
+            json格式: {"message": "获取成功", 
+            "points": [{"id": 5,"x": 113.086071,"y": 22.600429,"name": "北门"}]
+            }
+        """
+        # 获取所有地点（一定按id排序）
+        points = await PointCRUD(self.session).get_points()
+        points = [{"id": p.id, "x": p.x, "y": p.y, "name": p.name} for p in points]
+        return {"message": "获取成功", "points": points}
+    

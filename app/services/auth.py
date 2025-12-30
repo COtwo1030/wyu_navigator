@@ -22,7 +22,7 @@ class UserService:
         参数:
             data: LoginData
         返回:
-            dict: {"message": "登录成功"}
+            用户名
         """
         # 根据邮箱获取数据库中的密码
         db_hashed_password = await UserCRUD(self.session).search_user_hashed_password(email=data.email)
@@ -34,9 +34,11 @@ class UserService:
         if not is_valid:
             logger.warning(f"登录失败: 密码错误 - {data.email}")
             raise HTTPException(status_code=400, detail="密码错误")
+        # 获取用户名
+        username = await UserCRUD(self.session).search_username(email=data.email)
         logger.success(f"用户登录成功: email={data.email}")
-        return {"message": "登录成功"}
-
+        return {"message": "登录成功", "username": username}
+    
     async def user_register(self, data: RegisterData):
         """
         处理用户注册

@@ -79,7 +79,28 @@
 					success: (res) => {
 						if (res.statusCode === 200) {
 							uni.showToast({ title: '登录成功' });
-							// 可以在这里保存 token: uni.setStorageSync('token', res.data.token);
+							try {
+								let payload = res.data;
+								if (typeof payload === 'string') {
+									try { payload = JSON.parse(payload); } catch (e) {}
+								}
+								if (payload && payload.token) {
+									uni.setStorageSync('token', payload.token);
+								}
+								let uname = '';
+								if (payload && payload.username) {
+									uname = payload.username;
+								} else if (payload && payload.user && payload.user.username) {
+									uname = payload.user.username;
+								} else if (this.email) {
+									const idx = this.email.indexOf('@');
+									uname = idx > 0 ? this.email.slice(0, idx) : this.email;
+								}
+								if (uname) {
+									uni.setStorageSync('username', uname);
+								}
+							} catch (e) {}
+							uni.reLaunch({ url: '/pages/index/index' });
 						} else {
 							uni.showToast({ title: res.data.detail || '登录失败', icon: 'none' });
 						}
