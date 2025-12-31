@@ -3,24 +3,64 @@
 		<!-- 顶部面板：包含Tab切换和输入区域 -->
 		<view class="top-panel">
 			<view class="nav-bar">
+				<view class="nav-left">
+					<image class="logo" src="/static/wyu_logo.png" mode="heightFix"></image>
+				</view>
 				<view class="nav-center">
-					<button class="btn" @click="toggleSearchPanel">搜索</button>
-					<button class="btn" @click="toSummary">地点汇总</button>
+					<text class="link" @click="toggleSearchPanel">交通导航</text>
+					<text class="link" @click="toSummary">地点汇总</text>
 				</view>
 				<view class="nav-right">
-					<button class="btn login-btn" @click="toLogin">{{ username || '登录' }}</button>
+					<view class="login-wrap" @mouseenter="onLoginMouseEnter" @mouseleave="onLoginMouseLeave">
+						<text class="link" @click.stop="onLoginClick">{{ username || '登录' }}</text>
+						<view class="login-dropdown" v-if="username && dropdownOpen" @mouseenter="onLoginMouseEnter" @mouseleave="onLoginMouseLeave">
+							<view class="dropdown-item" @click="logout">退出登录</view>
+						</view>
+					</view>
 				</view>
 			</view>
-			<view class="route-box" v-if="showRoutePanel">
-				<view class="input-row">
-					<text class="label start">起</text>
-					<input class="input" v-model="startKeyword" placeholder="我的位置" />
+			<view class="route-box" v-if="showRoutePanel" :style="{ left: routeBoxLeft + 'px', top: routeBoxTop + 'px' }" @touchstart="onRouteBoxTouchStart" @touchmove.stop.prevent="onRouteBoxTouchMove" @touchend="onRouteBoxTouchEnd" @mousedown="onRouteBoxMouseDown">
+				<view class="route-title">
+					<text>交通导航</text>
+					<text class="route-close" @click="closePanel">×</text>
 				</view>
-				<view class="input-row">
-					<text class="label end">终</text>
-					<input class="input" v-model="endKeyword" placeholder="输入终点" />
+				<view class="route-tabs">
+					<text class="tab" :class="{active: routeMode==='walking'}" @click="changeMode('walking')">步行</text>
+					<text class="tab" :class="{active: routeMode==='driving'}" @click="changeMode('driving')">驾车</text>
+					<text class="tab" :class="{active: routeMode==='bicycling'}" @click="changeMode('bicycling')">骑行</text>
 				</view>
-				<button class="btn route-btn" @click="handleRoutePlan">开始导航</button>
+				<view class="route-rows">
+					<view class="swap-col" @click="swapPoints"><text class="arrow">↑</text><text class="arrow">↓</text></view>
+					<view class="rows-col">
+						<view class="route-row">
+							<text class="dot green"></text>
+							<input class="route-input" v-model="startKeyword" placeholder="输入起点" @input="onStartInput" @focus="focusedField='start'" @blur="onStartBlur" />
+							<text class="row-clear" @click="clearStart">×</text>
+							<view class="suggest-list" v-if="focusedField==='start' && startSuggestions.length">
+								<view class="suggest-item" v-for="s in startSuggestions" :key="s.id" @click="selectStartSuggestion(s)">
+									<text class="suggest-icon">📍</text>
+									<text class="suggest-title">{{ s.name }}</text>
+								</view>
+							</view>
+						</view>
+						<view class="route-row">
+							<text class="dot blue"></text>
+							<input class="route-input" v-model="endKeyword" placeholder="输入终点" @input="onEndInput" @focus="focusedField='end'" @blur="onEndBlur" />
+							<text class="row-clear" @click="clearEnd">×</text>
+							<view class="suggest-list" v-if="focusedField==='end' && endSuggestions.length">
+								<view class="suggest-item" v-for="s in endSuggestions" :key="s.id" @click="selectEndSuggestion(s)">
+									<text class="suggest-icon">📍</text>
+									<text class="suggest-title">{{ s.name }}</text>
+								</view>
+							</view>
+						</view>
+					</view>
+				</view>
+				<view class="route-actions">
+					<button class="primary" @click="handleRoutePlan">开始导航</button>
+					<button class="outline" @click="clearRoute">清除路线</button>
+				</view>
+
 			</view>
 		</view>
 
@@ -35,6 +75,8 @@
 	let markersInst = null;
 	let poiMarkersInst = null;
 	let routeLayerInst = null;
+	let seMarkersInst = null;
+	let seLabelsInst = null;
 	export default {
 		data() {
 			return {
@@ -49,7 +91,23 @@
 				markers: null,
 				routeLayer: null,
 				username: '',
-				showRoutePanel: false
+				showRoutePanel: false,
+				routeMode: 'walking',
+				routeBoxLeft: 0,
+				routeBoxTop: 80,
+				dragging: false,
+				dragMode: '',
+				dragStart: { x: 0, y: 0 },
+				boxStart: { left: 0, top: 0 },
+				startSuggestions: [],
+				endSuggestions: [],
+				startTimer: null,
+				endTimer: null,
+				startBlurTimer: null,
+				endBlurTimer: null,
+				focusedField: '',
+				dropdownOpen: false,
+				dropdownCloseTimer: null
 			}
 		},
 		onShow() {
@@ -73,7 +131,7 @@
 		methods: {
 			initMap() {
 				// 初始化地图中心点 (五邑大学附近)
-				const center = new TMap.LatLng(22.595546, 113.086064);
+				const center = new TMap.LatLng(22.596002,113.086019);
 				
 				// 定义五邑大学区域边界 (大概范围)
 				// 西南角: 22.5878, 113.0780
@@ -85,7 +143,7 @@
 
 				mapInst = new TMap.Map('container', {
 					center: center,
-					zoom: 16,
+					zoom: 16.2,
 					boundary: boundary,
 					baseMap: { features: ['base', 'building3d'] }
 				});
@@ -102,7 +160,24 @@
 					console.error('个性化图层加载错误:', err);
 				});
 
-				// 初始化点标记图层 (用于显示搜索结果)
+				// 起终点标记图层
+				seMarkersInst = new TMap.MultiMarker({
+					map: mapInst,
+					styles: {
+						start: new TMap.MarkerStyle({ width: 25, height: 35, anchor: { x: 16, y: 32 }, src: 'https://mapapi.qq.com/web/lbs/javascriptGL/demo/img/start.png' }),
+						end: new TMap.MarkerStyle({ width: 25, height: 35, anchor: { x: 16, y: 32 }, src: 'https://mapapi.qq.com/web/lbs/javascriptGL/demo/img/end.png' })
+					}
+				});
+				// 起终点文字标签图层
+				seLabelsInst = new TMap.MultiLabel({
+					map: mapInst,
+					styles: {
+						startLabel: new TMap.LabelStyle({ color: '#2E7D32', size: 14, offset: { x: 0, y: -40 } }),
+						endLabel: new TMap.LabelStyle({ color: '#1565C0', size: 14, offset: { x: 0, y: -40 } })
+					}
+				});
+
+				// 初始化点标记
 				markersInst = new TMap.MultiMarker({
 					map: mapInst
 				});
@@ -124,11 +199,6 @@
 							}
 						}
 						markersInst.setGeometries(geometries);
-						if (geometries.length) {
-							const bounds = new TMap.LatLngBounds();
-							geometries.forEach(g => bounds.extend(g.position));
-							mapInst.fitBounds(bounds);
-						}
 					},
 					fail: () => {
 						uni.showToast({ title: '地点加载失败', icon: 'none' });
@@ -168,6 +238,38 @@
 					});
 				}
 			},
+			clearRoute() {
+				if (routeLayerInst) { routeLayerInst.setGeometries([]); routeLayerInst.destroy(); routeLayerInst = null; }
+				if (seMarkersInst) { seMarkersInst.setGeometries([]); }
+				if (seLabelsInst) { seLabelsInst.setGeometries([]); }
+				uni.request({
+					url: 'http://127.0.0.1:8080/point/list',
+					method: 'GET',
+					success: (res) => {
+						const points = (res.data && res.data.points) || [];
+						const geometries = [];
+						for (let i = 0; i < points.length; i++) {
+							const p = points[i];
+							if (typeof p.x === 'number' && typeof p.y === 'number' && p.y >= -90 && p.y <= 90 && p.x >= -180 && p.x <= 180) {
+								geometries.push({ id: String(p.id), position: new TMap.LatLng(p.y, p.x), content: p.name });
+							}
+						}
+						if (markersInst) { markersInst.setGeometries(geometries); }
+					},
+					fail: () => { uni.showToast({ title: '地点加载失败', icon: 'none' }); }
+				});
+			},
+			clearStart() { this.startKeyword = ''; },
+			clearEnd() { this.endKeyword = ''; },
+			closePanel() { this.showRoutePanel = false; this.clearRoute(); },
+			changeMode(mode) { this.routeMode = mode; if (this.endKeyword) { this.handleRoutePlan(); } },
+			swapPoints() {
+				const s = this.startKeyword;
+				this.startKeyword = this.endKeyword;
+				this.endKeyword = s;
+				if (seMarkersInst) { seMarkersInst.setGeometries([]); }
+				if (this.endKeyword) { this.handleRoutePlan(); }
+			},
 			displayMarkers(data) {
 				// 将搜索结果转换为标记点数据
 				const geometries = data.map((item) => ({
@@ -199,17 +301,36 @@
 				// 立即触发路线规划
 				this.handleRoutePlan();
 			},
-			toLogin() {
-				uni.navigateTo({ url: '/pages/login/login' });
-			},
-			toSummary() {
+			onLoginClick() {
+						if (!this.username) {
+							uni.navigateTo({ url: '/pages/login/login' });
+						}
+					},
+					onLoginMouseEnter() {
+						if (this.dropdownCloseTimer) clearTimeout(this.dropdownCloseTimer);
+						if (this.username) this.dropdownOpen = true;
+					},
+					onLoginMouseLeave() {
+						if (this.dropdownCloseTimer) clearTimeout(this.dropdownCloseTimer);
+						this.dropdownCloseTimer = setTimeout(() => { this.dropdownOpen = false; }, 2000);
+					},
+					logout() {
+						if (this.dropdownCloseTimer) clearTimeout(this.dropdownCloseTimer);
+						this.dropdownOpen = false;
+						uni.removeStorageSync('username');
+						this.username = '';
+						uni.showToast({ title: '已退出', icon: 'none' });
+					},
+				toSummary() {
 				uni.showToast({ title: '地点汇总开发中', icon: 'none' });
 			},
 			toggleSearchPanel() {
 				this.showRoutePanel = !this.showRoutePanel;
 			},
 			async handleRoutePlan() {
-				uni.showLoading({ title: '准备路线中...' });
+					uni.showLoading({ title: '准备路线中...' });
+					if (markersInst) { markersInst.setGeometries([]); }
+					this.results = [];
 				
 				try {
 					// 1. 解析起点
@@ -240,73 +361,80 @@
 				}
 			},
 			getCurrentLocation() {
-				return new Promise((resolve, reject) => {
+				return new Promise((resolve) => {
 					uni.getLocation({
 						type: 'gcj02',
+						isHighAccuracy: true,
+						highAccuracyExpireTime: 5000,
+						timeout: 8000,
 						success: (res) => {
 							resolve(new TMap.LatLng(res.latitude, res.longitude));
 						},
-						fail: (err) => {
-							// PC端开发调试时的备用坐标 (五邑大学)
-							// resolve(new TMap.LatLng(22.595546, 113.086064)); 
-							reject(err);
+						fail: () => {
+							resolve(new TMap.LatLng(22.595546, 113.086064));
 						}
 					});
 				});
 			},
 			getCoordsByKeyword(keyword) {
 				return new Promise((resolve, reject) => {
-					if (typeof TMap.service !== 'undefined' && TMap.service.Search) {
-						const search = new TMap.service.Search({ pageSize: 1 });
-						search.searchRegion({
-							keyword: keyword,
-							cityName: '江门市', // 限制在江门市搜索
-						}).then((result) => {
-							if (result.data && result.data.length > 0) {
-								resolve(result.data[0].location);
+					uni.request({
+						url: 'http://127.0.0.1:8080/point/list',
+						method: 'GET',
+						success: (res) => {
+							const points = (res.data && res.data.points) || [];
+							const k = String(keyword).trim();
+							let p = points.find(it => it && typeof it.name === 'string' && it.name === k);
+							if (!p) p = points.find(it => it && typeof it.name === 'string' && it.name.includes(k));
+							if (p && typeof p.x === 'number' && typeof p.y === 'number') {
+								resolve(new TMap.LatLng(p.y, p.x));
 							} else {
 								reject('未找到该地点');
 							}
-						}).catch(reject);
-					} else {
-						reject('搜索服务不可用');
-					}
+						},
+						fail: reject
+					});
 				});
 			},
-			planRoute(start, end) {
-				if (!TMap.service || !TMap.service.Driving) {
-					uni.hideLoading();
-					uni.showToast({ title: '导航服务不可用', icon: 'none' });
-					return;
-				}
-
-				const driving = new TMap.service.Driving({
-					mp: false, // 不返回多方案
-					policy: 'PICKUP,NAV_POINT_FIRST' // 路线策略
-				});
-
-				driving.search({ from: start, to: end }).then((result) => {
-					uni.hideLoading();
-					if (result.result && result.result.routes && result.result.routes.length > 0) {
-						const route = result.result.routes[0];
-						this.drawRoute(route.polyline);
-						
-						// 调整视野以展示整条路线
+			async planRoute(start, end) {
+					const slat = start.getLat ? start.getLat() : start.lat;
+					const slng = start.getLng ? start.getLng() : start.lng;
+					const elat = end.getLat ? end.getLat() : end.lat;
+					const elng = end.getLng ? end.getLng() : end.lng;
+					const from = `${slat},${slng}`;
+					const to = `${elat},${elng}`;
+					const mode = this.routeMode || 'driving';
+					uni.request({
+						url: `/qqmap/ws/direction/v1/${mode}`,
+						method: 'GET',
+						data: { from, to, key: 'SWABZ-BCY64-WIHUL-KCDGA-OMFUV-JWFS5' },
+						success: (res) => {
+							uni.hideLoading();
+							const route = res.data && res.data.result && res.data.result.routes && res.data.result.routes[0];
+							if (!route || !route.polyline) { uni.showToast({ title: '未找到路线', icon: 'none' }); return; }
+							const pl = route.polyline.slice();
+						for (let i = 2; i < pl.length; i++) pl[i] = pl[i-2] + pl[i] / 1000000;
+						const path = [];
+						for (let i = 0; i < pl.length; i += 2) path.push(new TMap.LatLng(pl[i], pl[i+1]));
+						this.drawRoute(path);
+						seMarkersInst && seMarkersInst.setGeometries([
+							{ id: 'start', styleId: 'start', position: new TMap.LatLng(slat, slng) },
+							{ id: 'end', styleId: 'end', position: new TMap.LatLng(elat, elng) }
+						]);
+						const startName = (!this.startKeyword || this.startKeyword.trim() === '' || this.startKeyword === '我的位置') ? '我的位置' : this.startKeyword;
+						const endName = this.endKeyword;
+						seLabelsInst && seLabelsInst.setGeometries([
+							{ id: 'startLabel', styleId: 'startLabel', position: new TMap.LatLng(slat, slng), content: startName },
+							{ id: 'endLabel', styleId: 'endLabel', position: new TMap.LatLng(elat, elng), content: endName }
+						]);
 						const bounds = new TMap.LatLngBounds();
-						route.polyline.forEach(point => bounds.extend(point));
+						path.forEach(pt => bounds.extend(pt));
 						mapInst.fitBounds(bounds, { padding: 80 });
-						
-						// 隐藏结果列表以清晰显示地图
 						this.results = [];
-					} else {
-						uni.showToast({ title: '未找到路线', icon: 'none' });
-					}
-				}).catch((error) => {
-					uni.hideLoading();
-					console.error('路线规划错误:', error);
-					uni.showToast({ title: '路线规划失败', icon: 'none' });
-				});
-			},
+						},
+						fail: () => { uni.hideLoading(); uni.showToast({ title: '路线规划失败', icon: 'none' }); }
+					});
+				},
 			drawRoute(path) {
 					if (routeLayerInst) {
 						routeLayerInst.setGeometries([]);
@@ -320,8 +448,103 @@
 						},
 						geometries: [{ id: 'route', styleId: 'route', paths: path }]
 					});
+				},
+				onRouteBoxTouchStart(e) {
+					const t = (e.touches && e.touches[0]) || null;
+					this.dragging = true;
+					this.dragMode = 'touch';
+					if (t) { this.dragStart = { x: t.clientX || t.pageX, y: t.clientY || t.pageY }; } else { this.dragStart = { x: 0, y: 0 }; }
+					this.boxStart = { left: this.routeBoxLeft, top: this.routeBoxTop };
+				},
+				onRouteBoxTouchMove(e) {
+					if (!this.dragging || this.dragMode !== 'touch') return;
+					const t = (e.touches && e.touches[0]) || null;
+					if (!t) return;
+					const dx = (t.clientX || t.pageX) - this.dragStart.x;
+					const dy = (t.clientY || t.pageY) - this.dragStart.y;
+					this.routeBoxLeft = this.boxStart.left + dx;
+					this.routeBoxTop = this.boxStart.top + dy;
+				},
+				onRouteBoxTouchEnd() {
+					this.dragging = false;
+					this.dragMode = '';
+				},
+				onRouteBoxMouseDown(e) {
+					this.dragging = true;
+					this.dragMode = 'mouse';
+					this.dragStart = { x: e.clientX, y: e.clientY };
+					this.boxStart = { left: this.routeBoxLeft, top: this.routeBoxTop };
+					if (typeof document !== 'undefined') {
+						document.addEventListener('mousemove', this.onRouteBoxMouseMove);
+						document.addEventListener('mouseup', this.onRouteBoxMouseUp);
+					}
+				},
+				onRouteBoxMouseMove(e) {
+					if (!this.dragging || this.dragMode !== 'mouse') return;
+					const dx = e.clientX - this.dragStart.x;
+					const dy = e.clientY - this.dragStart.y;
+					this.routeBoxLeft = this.boxStart.left + dx;
+					this.routeBoxTop = this.boxStart.top + dy;
+				},
+				onRouteBoxMouseUp() {
+					this.dragging = false;
+					this.dragMode = '';
+					if (typeof document !== 'undefined') {
+						document.removeEventListener('mousemove', this.onRouteBoxMouseMove);
+						document.removeEventListener('mouseup', this.onRouteBoxMouseUp);
+					}
+				},
+				onStartInput(e) {
+					this.focusedField = 'start';
+					const v = e && e.detail ? e.detail.value : this.startKeyword;
+					this.startKeyword = v;
+					if (this.startTimer) clearTimeout(this.startTimer);
+					this.startTimer = setTimeout(() => { this.fetchSuggestions('start', v); }, 200);
+				},
+				onEndInput(e) {
+					this.focusedField = 'end';
+					const v = e && e.detail ? e.detail.value : this.endKeyword;
+					this.endKeyword = v;
+					if (this.endTimer) clearTimeout(this.endTimer);
+					this.endTimer = setTimeout(() => { this.fetchSuggestions('end', v); }, 200);
+				},
+				fetchSuggestions(field, keyword) {
+					const k = String(keyword || '').trim();
+					if (!k) { this.startSuggestions = []; this.endSuggestions = []; return; }
+					uni.request({
+						url: 'http://127.0.0.1:8080/point/list',
+						method: 'GET',
+						success: (res) => {
+							const points = (res.data && res.data.points) || [];
+							const list = points.filter(it => it && typeof it.name === 'string' && it.name.includes(k)).slice(0, 10).map(it => ({ id: String(it.id), name: it.name, x: it.x, y: it.y }));
+							if (field === 'start') this.startSuggestions = list; else this.endSuggestions = list;
+						},
+						fail: () => { if (field === 'start') this.startSuggestions = []; else this.endSuggestions = []; }
+					});
+				},
+				selectStartSuggestion(s) {
+					this.startKeyword = s && s.name ? s.name : this.startKeyword;
+					this.startSuggestions = [];
+					this.focusedField = '';
+				},
+				selectEndSuggestion(s) {
+					this.endKeyword = s && s.name ? s.name : this.endKeyword;
+					this.endSuggestions = [];
+					this.focusedField = '';
+				},
+				onStartBlur() {
+					if (this.startBlurTimer) clearTimeout(this.startBlurTimer);
+					this.startBlurTimer = setTimeout(() => {
+						if (this.focusedField === 'start') { this.focusedField = ''; this.startSuggestions = []; }
+					}, 150);
+				},
+				onEndBlur() {
+					if (this.endBlurTimer) clearTimeout(this.endBlurTimer);
+					this.endBlurTimer = setTimeout(() => {
+						if (this.focusedField === 'end') { this.focusedField = ''; this.endSuggestions = []; }
+					}, 150);
 				}
-		},
+			},
 		onUnload() {
 			// 页面卸载时销毁地图实例，防止内存泄漏
 			if (mapInst) {
@@ -354,25 +577,49 @@
 		left: 0;
 		right: 0;
 		z-index: 999;
-		background: #fff;
-		padding: 10px;
-		box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+		background: transparent;
+		padding: 0;
+		box-shadow: none;
 	}
 	.nav-bar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 8px;
-	}
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin: 0;
+			background: #8B0000;
+			padding: 20px 20px;
+			border-radius: 0;
+			color: #fff;
+			width: 100%;
+		}
 	.nav-center {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		gap: 10px;
+		flex: 1;
 	}
-	.nav-right {
+	.nav-right { display:flex; align-items:center; position:relative; margin-right: 32px; }
+	.login-wrap { position:relative; }
+	.login-dropdown { position:absolute; top:calc(100% + 6px); right:0; background:#fff; border:1px solid #eee; border-radius:6px; box-shadow:0 6px 16px rgba(0,0,0,0.12); z-index:1000; min-width:120px; }
+	.login-dropdown .dropdown-item { padding:8px 12px; color:#333; }
+	.login-dropdown .dropdown-item:hover { background:#f5f7fa; }
+	.nav-left {
 		display: flex;
 		align-items: center;
 	}
+	.logo {
+		height: 40px;
+		width: auto;
+	}
+	.link {
+		color: #fff;
+		font-size: 14px;
+		padding: 0 12px;
+		line-height: 40px;
+		cursor: pointer;
+	}
+	.link:hover { opacity: 0.85; }
 	.login-btn {
 		background-color: #34c759;
 	}
@@ -451,10 +698,20 @@
 	}
 	
 	/* Route Mode Styles */
-	.route-box {
-		display: flex;
-		flex-direction: column;
-	}
+		.route-box {
+			position: absolute;
+			width: 300px;
+			display: flex;
+			flex-direction: column;
+			padding: 10px;
+			background: rgba(255,255,255,0.96);
+			border-radius: 10px;
+			box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+			backdrop-filter: saturate(180%) blur(4px);
+			z-index: 998;
+			user-select: none;
+			cursor: move;
+		}
 	
 	.input-row {
 		display: flex;
@@ -485,13 +742,31 @@
 		background: #ff3b30;
 	}
 	
-	.route-btn {
-		margin-top: 5px;
-		background: #007aff;
-		width: 100%;
-		border-radius: 20px;
-		font-size: 16px;
-	}
+	.route-title { display:flex; align-items:center; justify-content:space-between; background:#0D6EFD; color:#fff; font-size:16px; font-weight:600; padding:10px 12px; border-radius:6px; }
+		.route-close { font-size:18px; padding:0 6px; cursor:pointer; }
+		.route-tabs { display:flex; gap:20px; padding:12px 12px; border-bottom:1px solid #eee; }
+		.tab { color:#666; padding:6px 0; border-bottom:2px solid transparent; }
+		.tab.active { color:#0D6EFD; border-bottom-color:#0D6EFD; }
+		.route-rows { display:flex; gap:10px; padding:12px; }
+		.rows-col { flex:1; display:flex; flex-direction:column; gap:10px; }
+		.swap-col { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:10px; padding:8px 10px; background:#f6f6f6; border-radius:6px; cursor:pointer; }
+		.arrow { color:#0D6EFD; font-weight:600; font-size:20px; line-height:20px; }
+		.route-row { display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid #eee; position: relative; overflow: visible; }
+		.dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+		.green { background:#34c759; }
+		.blue { background:#0D6EFD; }
+		.scope { color:#0D6EFD; font-size:12px; }
+		.route-input { flex:1; height:36px; border:1px solid #eee; border-radius:20px; padding:0 12px; background:#fff; }
+		.row-clear { color:#999; cursor:pointer; padding:0 6px; }
+		.route-actions { display:flex; gap:12px; padding:12px; }
+		.primary { flex:1; background:#0D6EFD; color:#fff; border-radius:6px; height:40px; line-height:40px; }
+		.outline { flex:1; background:#fff; color:#0D6EFD; border:1px solid #0D6EFD; border-radius:6px; height:40px; line-height:40px; }
+				.suggest-list { position:absolute; top:calc(100% + 6px); left:40px; right:10px; background:#fff; border:1px solid #eee; border-radius:6px; box-shadow:0 6px 16px rgba(0,0,0,0.12); max-height:220px; overflow-y:auto; z-index: 1000; }
+				.suggest-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid #f4f4f4; }
+				.suggest-item:last-child { border-bottom:none; }
+				.suggest-icon { color:#0D6EFD; }
+				.suggest-title { font-size:14px; color:#333; }
+
 
 	.result-item {
 		padding: 12px;
