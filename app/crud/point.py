@@ -26,7 +26,7 @@ class PointCRUD:
             data: PointData
         无返回值
         """
-        point = Point(name=data.name, x=data.x, y=data.y)
+        point = Point(name=data.name, x=data.x, y=data.y, category=data.category, description=data.description, img=data.img)
         self.session.add(point)
         await self.session.commit()
     

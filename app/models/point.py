@@ -9,3 +9,6 @@ class Point(Base):
     name : Mapped[str] = mapped_column(String(20), unique=True, nullable=False) # 地点名，非空
     x : Mapped[float] = mapped_column(nullable=False) # 经度，非空
     y : Mapped[float] = mapped_column(nullable=False) # 纬度，非空
+    category : Mapped[str] = mapped_column(String(20), nullable=True) # 地点分类，可空
+    description : Mapped[str] = mapped_column(String(200), nullable=True) # 地点描述，可空
+    img : Mapped[str] = mapped_column(String(200), nullable=True) # 地点图片URL，可空

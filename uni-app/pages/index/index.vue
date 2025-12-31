@@ -64,6 +64,37 @@
 			</view>
 		</view>
 
+		<view class="summary-box" v-if="showSummaryPanel" :style="{ left: summaryBoxLeft + 'px', top: summaryBoxTop + 'px' }" @touchstart="onSummaryTouchStart" @touchmove.stop.prevent="onSummaryTouchMove" @touchend="onSummaryTouchEnd" @mousedown="onSummaryMouseDown">
+			<view class="summary-title">
+				<text>地点汇总</text>
+				<text class="route-close" @click="closeSummary">×</text>
+			</view>
+			<view class="summary-tabs">
+				<text v-for="c in summaryCategories" :key="c" class="tab" :class="{active: selectedCategory===c}" @click="selectCategory(c)">{{ c }}</text>
+			</view>
+			<scroll-view class="summary-scroll" scroll-y="true">
+				<view class="summary-grid">
+					<view class="grid-item" v-for="p in summaryPoints" :key="p.id" @click="openPointCard(p)">
+						<image class="grid-img" :src="p.img" mode="aspectFit"></image>
+						<text class="grid-name">{{ p.name }}</text>
+					</view>
+				</view>
+			</scroll-view>
+		</view>
+
+		<view class="point-card" v-if="pointCardVisible" :style="{ left: pointCardLeft + 'px', top: pointCardTop + 'px' }" @touchstart="onPointCardTouchStart" @touchmove.stop.prevent="onPointCardTouchMove" @touchend="onPointCardTouchEnd" @mousedown="onPointCardMouseDown">
+			<view class="point-card-title">
+				<text>{{ pointCard.name }}</text>
+				<text class="route-close" @click="closePointCard">×</text>
+			</view>
+			<image class="point-card-img" :src="pointCard.img" mode="aspectFit" @click="previewImage(pointCard.img)"></image>
+			<view class="point-card-desc">{{ pointCard.description }}</view>
+			<view class="point-card-actions">
+				<button class="primary" @click="startNavToPoint">开始导航</button>
+				<button class="outline" @click="setAsEnd">设为终点</button>
+			</view>
+		</view>
+
 		<view id="container" class="map-container"></view>
 		
 		
@@ -107,7 +138,26 @@
 				endBlurTimer: null,
 				focusedField: '',
 				dropdownOpen: false,
-				dropdownCloseTimer: null
+				dropdownCloseTimer: null,
+				showSummaryPanel: false,
+				summaryCategories: [],
+				selectedCategory: '',
+				summaryPoints: [],
+				_allSummaryPoints: [],
+				pointCardVisible: false,
+				pointCard: null,
+				pointCardLeft: 100,
+				pointCardTop: 120,
+				pcDragging: false,
+				pcDragMode: '',
+				pcDragStart: { x: 0, y: 0 },
+				pcBoxStart: { left: 0, top: 0 },
+				summaryBoxLeft: 0,
+				summaryBoxTop: 80,
+				sDragging: false,
+				sDragMode: '',
+				sDragStart: { x: 0, y: 0 },
+				sBoxStart: { left: 0, top: 0 }
 			}
 		},
 		onShow() {
@@ -322,11 +372,123 @@
 						uni.showToast({ title: '已退出', icon: 'none' });
 					},
 				toSummary() {
-				uni.showToast({ title: '地点汇总开发中', icon: 'none' });
-			},
-			toggleSearchPanel() {
-				this.showRoutePanel = !this.showRoutePanel;
-			},
+					this.showSummaryPanel = !this.showSummaryPanel;
+					if (this.showSummaryPanel) {
+						this.fetchSummaryPoints();
+					} else {
+						this.loadAllMarkers();
+					}
+				},
+				fetchSummaryPoints() {
+					uni.request({
+						url: 'http://127.0.0.1:8080/point/list',
+						method: 'GET',
+						success: (res) => {
+							const points = (res.data && res.data.points) || [];
+							this._allSummaryPoints = points;
+							const seen = {}; const cats = [];
+							for (let i = 0; i < points.length; i++) { const c = points[i].category || '其他'; if (!seen[c]) { seen[c] = 1; cats.push(c); } }
+							this.summaryCategories = cats;
+							this.selectedCategory = cats[0] || '';
+							this.summaryPoints = this.selectedCategory ? points.filter(p => (p.category || '其他') === this.selectedCategory) : points;
+							this.applySummaryMarkers();
+						},
+						fail: () => { uni.showToast({ title: '地点加载失败', icon: 'none' }); }
+					});
+				},
+				selectCategory(c) { this.selectedCategory = c; const list = (this._allSummaryPoints || []).filter(p => (p.category || '其他') === c); this.summaryPoints = list; this.applySummaryMarkers(); },
+				applySummaryMarkers() {
+					if (!markersInst) return;
+					const list = this.summaryPoints || [];
+					const geos = [];
+					for (let i = 0; i < list.length; i++) { const p = list[i]; if (typeof p.x === 'number' && typeof p.y === 'number') { geos.push({ id: String(p.id), position: new TMap.LatLng(p.y, p.x), styleId: 'poi', content: p.name }); } }
+					markersInst.setGeometries(geos);
+				},
+				closeSummary() { this.showSummaryPanel = false; this.loadAllMarkers(); },
+				openPointCard(p) {
+					this.pointCard = p;
+					this.pointCardVisible = true;
+					const w = 560, h = 520;
+					uni.getSystemInfo({
+						success: (info) => {
+							const left = Math.max(10, Math.floor((info.windowWidth - w) / 2));
+							const top = Math.max(60, Math.floor((info.windowHeight - h) / 2));
+							this.pointCardLeft = left;
+							this.pointCardTop = top;
+						}
+					});
+				},
+				closePointCard() { this.pointCardVisible = false; this.pointCard = null; },
+				startNavToPoint() { if (!this.pointCard) return; this.endKeyword = this.pointCard.name || ''; this.pointCardVisible = false; this.showSummaryPanel = false; if (markersInst) { markersInst.setGeometries([]); } this.handleRoutePlan(); },
+				setAsEnd() { if (!this.pointCard) return; this.endKeyword = this.pointCard.name || ''; this.pointCardVisible = false; this.showSummaryPanel = false; if (markersInst) { markersInst.setGeometries([]); } },
+				previewImage(src) { if (!src) return; const urls = Array.isArray(src) ? src : [src]; uni.previewImage({ current: urls[0], urls }); },
+				onPointCardTouchStart(e) { const t = (e.touches && e.touches[0]) || null; this.pcDragging = true; this.pcDragMode = 'touch'; this.pcDragStart = t ? { x: t.clientX || t.pageX, y: t.clientY || t.pageY } : { x: 0, y: 0 }; this.pcBoxStart = { left: this.pointCardLeft, top: this.pointCardTop }; },
+				onPointCardTouchMove(e) { if (!this.pcDragging || this.pcDragMode !== 'touch') return; const t = (e.touches && e.touches[0]) || null; if (!t) return; const dx = (t.clientX || t.pageX) - this.pcDragStart.x; const dy = (t.clientY || t.pageY) - this.pcDragStart.y; this.pointCardLeft = this.pcBoxStart.left + dx; this.pointCardTop = this.pcBoxStart.top + dy; },
+				onPointCardTouchEnd() { this.pcDragging = false; this.pcDragMode = ''; },
+				onPointCardMouseDown(e) { this.pcDragging = true; this.pcDragMode = 'mouse'; this.pcDragStart = { x: e.clientX, y: e.clientY }; this.pcBoxStart = { left: this.pointCardLeft, top: this.pointCardTop }; if (typeof document !== 'undefined') { document.addEventListener('mousemove', this.onPointCardMouseMove); document.addEventListener('mouseup', this.onPointCardMouseUp); } },
+				onPointCardMouseMove(e) { if (!this.pcDragging || this.pcDragMode !== 'mouse') return; const dx = e.clientX - this.pcDragStart.x; const dy = e.clientY - this.pcDragStart.y; this.pointCardLeft = this.pcBoxStart.left + dx; this.pointCardTop = this.pcBoxStart.top + dy; },
+				onPointCardMouseUp() { this.pcDragging = false; this.pcDragMode = ''; if (typeof document !== 'undefined') { document.removeEventListener('mousemove', this.onPointCardMouseMove); document.removeEventListener('mouseup', this.onPointCardMouseUp); } },
+				onSummaryTouchStart(e) {
+					const t = (e.touches && e.touches[0]) || null;
+					this.sDragging = true;
+					this.sDragMode = 'touch';
+					if (t) { this.sDragStart = { x: t.clientX || t.pageX, y: t.clientY || t.pageY }; } else { this.sDragStart = { x: 0, y: 0 }; }
+					this.sBoxStart = { left: this.summaryBoxLeft, top: this.summaryBoxTop };
+				},
+				onSummaryTouchMove(e) {
+					if (!this.sDragging || this.sDragMode !== 'touch') return;
+					const t = (e.touches && e.touches[0]) || null;
+					if (!t) return;
+					const dx = (t.clientX || t.pageX) - this.sDragStart.x;
+					const dy = (t.clientY || t.pageY) - this.sDragStart.y;
+					this.summaryBoxLeft = this.sBoxStart.left + dx;
+					this.summaryBoxTop = this.sBoxStart.top + dy;
+				},
+				onSummaryTouchEnd() {
+					this.sDragging = false;
+					this.sDragMode = '';
+				},
+				onSummaryMouseDown(e) {
+					this.sDragging = true;
+					this.sDragMode = 'mouse';
+					this.sDragStart = { x: e.clientX, y: e.clientY };
+					this.sBoxStart = { left: this.summaryBoxLeft, top: this.summaryBoxTop };
+					if (typeof document !== 'undefined') {
+						document.addEventListener('mousemove', this.onSummaryMouseMove);
+						document.addEventListener('mouseup', this.onSummaryMouseUp);
+					}
+				},
+				onSummaryMouseMove(e) {
+					if (!this.sDragging || this.sDragMode !== 'mouse') return;
+					const dx = e.clientX - this.sDragStart.x;
+					const dy = e.clientY - this.sDragStart.y;
+					this.summaryBoxLeft = this.sBoxStart.left + dx;
+					this.summaryBoxTop = this.sBoxStart.top + dy;
+				},
+				onSummaryMouseUp() {
+					this.sDragging = false;
+					this.sDragMode = '';
+					if (typeof document !== 'undefined') {
+						document.removeEventListener('mousemove', this.onSummaryMouseMove);
+						document.removeEventListener('mouseup', this.onSummaryMouseUp);
+					}
+				},
+				loadAllMarkers() {
+					uni.request({
+						url: 'http://127.0.0.1:8080/point/list',
+						method: 'GET',
+						success: (res) => {
+							const points = (res.data && res.data.points) || [];
+							const geometries = [];
+							for (let i = 0; i < points.length; i++) { const p = points[i]; if (typeof p.x === 'number' && typeof p.y === 'number') { geometries.push({ id: String(p.id), position: new TMap.LatLng(p.y, p.x), styleId: 'poi', content: p.name }); } }
+							if (markersInst) { markersInst.setGeometries(geometries); }
+						},
+						fail: () => {}
+					});
+				},
+				toggleSearchPanel() {
+					this.showRoutePanel = !this.showRoutePanel;
+				},
 			async handleRoutePlan() {
 					uni.showLoading({ title: '准备路线中...' });
 					if (markersInst) { markersInst.setGeometries([]); }
@@ -703,7 +865,7 @@
 			width: 300px;
 			display: flex;
 			flex-direction: column;
-			padding: 10px;
+			padding: 0px;
 			background: rgba(255,255,255,0.96);
 			border-radius: 10px;
 			box-shadow: 0 6px 20px rgba(0,0,0,0.12);
@@ -766,6 +928,21 @@
 				.suggest-item:last-child { border-bottom:none; }
 				.suggest-icon { color:#0D6EFD; }
 				.suggest-title { font-size:14px; color:#333; }
+				.summary-box { position:absolute; width:500px; height:500px; background: rgba(255,255,255,0.96); border-radius:10px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index:998; user-select:none; cursor:move; overflow:hidden; display:flex; flex-direction:column; }
+				.summary-title { display:flex; align-items:center; justify-content:space-between; background:#0D6EFD; color:#fff; font-size:16px; font-weight:600; padding:10px 12px; border-radius:6px; }
+				.summary-tabs { display:flex; flex-wrap:wrap; gap:8px; padding:12px; }
+				.summary-tabs .tab { padding:6px 10px; background:#f6f6f6; border-radius:6px; color:#666; }
+				.summary-tabs .tab.active { background:#0D6EFD; color:#fff; }
+				.summary-scroll { width:100%; box-sizing:border-box; height:calc(100% - 120px); overflow-y:auto; padding:8px 12px; display:flex; justify-content:center; }
+				.summary-grid { display:grid; grid-template-columns: repeat(3, 140px); gap: 12px; justify-content: center; }
+				.grid-item { box-sizing:border-box; display:flex; flex-direction:column; align-items:center; }
+				.grid-img { display:block; width:100%; aspect-ratio: 1 / 1; height:auto; margin:0 auto; border-radius:8px; background:#f9f9f9; object-fit:contain; }
+				.grid-name { margin-top:6px; font-size:12px; color:#333; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+				.point-card { position:absolute; width:560px; max-width:95vw; background:#fff; border-radius:10px; box-shadow:0 10px 24px rgba(0,0,0,0.16); z-index:999; overflow:hidden; user-select:none; cursor:move; }
+				.point-card-title { display:flex; align-items:center; justify-content:space-between; background:#0D6EFD; color:#fff; font-size:16px; font-weight:600; padding:10px 12px; }
+				.point-card-img { display:block; width:100%; height:320px; object-fit:contain; background:#f7f7f7; }
+				.point-card-desc { padding:12px; color:#555; font-size:13px; line-height:1.6; }
+				.point-card-actions { display:flex; gap:12px; padding:12px; }
 
 
 	.result-item {

@@ -24,12 +24,12 @@ class PointService:
             无
         返回值：
             json格式: {"message": "获取成功", 
-            "points": [{"id": 5,"x": 113.086071,"y": 22.600429,"name": "北门"}]
+            "points": [{"id": 5,"x": 113.086071,"y": 22.600429,"name": "北门","category": "入口","description": "北门入口","img": "https://example.com/bmen.jpg"}]
             }
         """
         # 获取所有地点（一定按id排序）
         points = await PointCRUD(self.session).get_points()
-        points = [{"id": p.id, "x": p.x, "y": p.y, "name": p.name} for p in points]
+        points = [{"id": p.id, "x": p.x, "y": p.y, "name": p.name, "category": p.category, "description": p.description, "img": p.img} for p in points]
         logger.info(f"地点获取成功，共 {len(points)} 个地点")
         return {"message": "获取成功", "points": points}
     
