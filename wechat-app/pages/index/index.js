@@ -62,7 +62,9 @@ Page({
           opacity: config.map.groundOverlay.opacity || 0.8, // 默认透明度
           zIndex: config.map.groundOverlay.zIndex || 10
         });
-        this.mapCtx.includePoints({ points, padding: [20, 20, 20, 20] });
+        if (config.map.behavior?.fitAllPointsOnLoad) {
+          this.mapCtx.includePoints({ points, padding: [20, 20, 20, 20] });
+        }
       } catch (err) {
         console.error('添加地面叠加层失败：', err);
       }
@@ -103,9 +105,9 @@ Page({
           id: (isNaN(Number(item.id)) ? Math.floor(Math.random()*1000000) : Number(item.id)), // 数字ID
           longitude: Number(item.x) || 0, // 转数字+默认值
           latitude: Number(item.y) || 0,
-          iconPath: config.map.marker?.iconPath || '/static/marker.png', // 默认图标
-          width: 30,
-          height: 30,
+          iconPath: String(item.icon || '').trim().replace(/^[`'"]|[`'\"]$/g, '') || (config.map.marker?.iconPath || '/static/mark.png'),
+          width: (config.map.markerSize?.width || 30),
+          height: (config.map.markerSize?.height || 30),
           callout: {
             content: item.name || '未知点位',
             display: 'ALWAYS',
@@ -124,10 +126,12 @@ Page({
           latitude: Number(p.y) 
         }));
         if (includePts.length) {
-          this.mapCtx.includePoints({ 
-            points: includePts, 
-            padding: [40, 40, 40, 40] 
-          });
+          if (config.map.behavior?.fitAllPointsOnLoad) {
+            this.mapCtx.includePoints({ 
+              points: includePts, 
+              padding: [40, 40, 40, 40] 
+            });
+          }
         }
       },
       fail: (err) => {
@@ -458,7 +462,13 @@ Page({
     const markers = base.map(m => ({ ...m }));
     const markByName = (name, icon) => {
       const idx = markers.findIndex(m => (m.callout && m.callout.content) === name);
-      if (idx >= 0) markers[idx].iconPath = icon;
+      if (idx >= 0) {
+        markers[idx].iconPath = icon;
+        const w = config.map.routeIconSize?.width;
+        const h = config.map.routeIconSize?.height;
+        if (w) markers[idx].width = w;
+        if (h) markers[idx].height = h;
+      }
     };
     if (from && fromName === '我的位置') {
       const ids = markers.map(m => Number(m.id)).filter(n => !isNaN(n));
@@ -468,9 +478,9 @@ Page({
         longitude: Number(from.longitude),
         latitude: Number(from.latitude),
         iconPath: originIcon,
-        width: 30,
-        height: 30,
-        callout: { content: '我的位置', display: 'ALWAYS', padding: 4, borderRadius: 6, bgColor: '#fff', color: '#333' }
+          width: (config.map.routeIconSize?.width || 30),
+          height: (config.map.routeIconSize?.height || 30),
+          callout: { content: '我的位置', display: 'ALWAYS', padding: 4, borderRadius: 6, bgColor: '#fff', color: '#333' }
       });
     } else if (fromName) {
       markByName(fromName, originIcon);
@@ -483,9 +493,9 @@ Page({
         longitude: Number(to.longitude),
         latitude: Number(to.latitude),
         iconPath: destIcon,
-        width: 30,
-        height: 30,
-        callout: { content: '我的位置', display: 'ALWAYS', padding: 4, borderRadius: 6, bgColor: '#fff', color: '#333' }
+          width: (config.map.routeIconSize?.width || 30),
+          height: (config.map.routeIconSize?.height || 30),
+          callout: { content: '我的位置', display: 'ALWAYS', padding: 4, borderRadius: 6, bgColor: '#fff', color: '#333' }
       });
     } else if (toName) {
       markByName(toName, destIcon);

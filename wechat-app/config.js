@@ -1,6 +1,15 @@
 /**
  * 小程序全局配置文件
- * 集中管理API接口、地图默认参数、图层配置等
+ * 说明：
+ * - api：后端接口与腾讯地图 Key/端点配置
+ * - navigationBar：自定义导航栏外观
+ * - map.settings：地图交互能力（缩放、指南针、定位）
+ * - map.initial：初始视野与3D/俯视/倾斜角度
+ * - map.groundOverlay：地面叠加层（校园底图），关闭则不加载
+ * - map.marker/icon：默认点位图标，仅在后端未提供 item.icon 时回退使用
+ * - map.markerSize：普通点位图标的显示尺寸（px）
+ * - map.routeIcons/routeIconSize：路线起点/终点高亮图标与尺寸
+ * - map.behavior.fitAllPointsOnLoad：是否在进入页面时自动缩放以包含全部点位
  */
 const config = {
   // 后端接口配置
@@ -9,7 +18,8 @@ const config = {
     pointList: 'http://10.40.130.240:8080/point/list',
     // 腾讯地图服务配置（请将 key 替换为你自己的密钥）
     tencent: {
-      key: 'SWABZ-BCY64-WIHUL-KCDGA-OMFUV-JWFS5',
+      key: 'SWABZ-BCY64-WIHUL-KCDGA-OMFUV-JWFS5', // 腾讯地图服务密钥
+      // 路径说明：此为基础端点（默认步行），实际模式由前端 routeMode 动态拼接为 /{walking|bicycling|driving}
       directionUrl: 'https://apis.map.qq.com/ws/direction/v1/walking'
     }
   },
@@ -36,7 +46,7 @@ const config = {
     initial: {
       longitude: 113.085985, // 初始中心经度
       latitude: 22.595361,   // 初始中心纬度
-      scale: 16,             // 缩放级别 (3-20)
+      scale: 17,             // 缩放级别 (3-20)
       enable3D: true,        // 开启3D效果
       enableOverlooking: true, // 开启俯视
       skew: 30,              // 倾斜角度 (0-40)
@@ -61,12 +71,18 @@ const config = {
     // 地图标记配置
     marker: {
       // 默认图标路径
-      iconPath: 'https://cotwo.qzz.io/mark.png'
+      iconPath: 'https://cotwo.qzz.io/mark.png' // 默认点位图标；若后端返回 item.icon，则以其为准
     },
+    markerSize: { width: 24, height: 24 }, // 普通点位图标显示尺寸（px）
     routeIcons: {
-      origin: 'https://cotwo.qzz.io/origin.png',
-      destination: 'https://cotwo.qzz.io/destination.png'
-    }
+      origin: 'https://cotwo.qzz.io/origin.png', // 路线起点高亮图标
+      destination: 'https://cotwo.qzz.io/destination.png' // 路线终点高亮图标
+    },
+    behavior: {
+      // 进入页面是否自动缩放以包含所有点位：true自动缩放；false保持 initial.scale
+      fitAllPointsOnLoad: false
+    },
+    routeIconSize: { width: 24, height: 24 } // 路线起点/终点高亮图标显示尺寸（px）
   }
 }
 
