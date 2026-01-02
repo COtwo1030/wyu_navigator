@@ -51,7 +51,7 @@
         "pagePath": "pages/home/home",
         "text": "我的",
         "iconPath": "/images/tabbar/home.png",
-        "selectedIconPath": "/images/tabbar/home-active.png"
+        "selectedIconPath": "/images/tabbar/home-active1.png"
       }
     ]
   }
