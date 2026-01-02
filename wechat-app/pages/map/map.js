@@ -2,7 +2,7 @@ const config = require('../../config.js')
 
 Page({
   data: {
-    nav: { title: '校园导航', back: false, animated: false },
+    nav: { title: '地图', back: false, animated: false },
     // 地图基础设置
     mapSettings: config.map.settings,
     // 地图初始视野（显式赋值以兼容运行环境）
