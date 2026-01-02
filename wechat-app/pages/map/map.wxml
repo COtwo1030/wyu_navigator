@@ -1,4 +1,4 @@
-<navigation-bar title="{{nav.title}}" back="{{nav.back}}" color="{{nav.color}}" background="{{nav.background}}" animated="{{nav.animated}}"></navigation-bar>
+<navigation-bar extClass="nav-default" title="{{nav.title}}" back="{{nav.back}}" animated="{{nav.animated}}"></navigation-bar>
 <view class="maparea">
   <map
     id="map"
@@ -71,7 +71,13 @@
         <!-- 终点建议列表 -->
         <view class="suggest-list" wx:if="{{showToSuggestions && toSuggestions.length}}">
           <block wx:for="{{toSuggestions}}" wx:key="id">
-            <view class="suggest-item" bindtap="onPickToSuggestion" data-index="{{index}}">{{item.name}}</view>
+            <view class="suggest-item">
+              <view class="suggest-text" bindtap="onPickToSuggestion" data-index="{{index}}">{{item.name}}</view>
+              <view class="suggest-go" catchtap="onQuickNavTo" data-index="{{index}}">
+                <image class="suggest-icon" src="/images/tabbar/destination.png" mode="aspectFit"></image>
+                <view class="suggest-go-text">到这去</view>
+              </view>
+            </view>
           </block>
         </view>
       </view>

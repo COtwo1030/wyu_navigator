@@ -213,7 +213,14 @@ page {
   font-size: 14px;
   color: #333;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+.suggest-text { flex: 1; }
+.suggest-go { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.suggest-icon { width: 22px; height: 22px; flex-shrink: 0; }
+.suggest-go-text { font-size: 12px; color: #4CAF50; line-height: 1; }
 .suggest-item:last-child {
   border-bottom: none;
 }

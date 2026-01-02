@@ -24,14 +24,7 @@ const config = {
     }
   },
   
-  // 导航栏配置
-  navigationBar: {
-    title: '校园导航',     // 标题文字
-    back: false,         // 是否显示返回按钮
-    color: 'black',      // 字体颜色
-    background: '#FFF',  // 背景颜色
-    animated: false      // 标题栏动画
-  },
+
 
   // 地图相关配置
   map: {
@@ -70,43 +63,16 @@ const config = {
     
     // 地图标记配置
     marker: {
-      // 默认图标路径
-      iconPath: 'https://cotwo.qzz.io/mark.png' // 默认点位图标；若后端返回 item.icon，则以其为准
     },
     markerSize: { width: 24, height: 24 }, // 普通点位图标显示尺寸（px）
-    routeIcons: {
-      origin: 'https://cotwo.qzz.io/origin.png', // 路线起点高亮图标
-      destination: 'https://cotwo.qzz.io/destination.png' // 路线终点高亮图标
-    },
+
     behavior: {
       // 进入页面是否自动缩放以包含所有点位：true自动缩放；false保持 initial.scale
       fitAllPointsOnLoad: false
     },
     routeIconSize: { width: 24, height: 24 } // 路线起点/终点高亮图标显示尺寸（px）
   },
-  tabBarIcons: {
-    index: {
-      normal: 'https://cotwo.qzz.io/index1.png',
-      selected: 'https://cotwo.qzz.io/index2.png'
-    },
-    map: {
-      normal: 'https://cotwo.qzz.io/map1.png',
-      selected: 'https://cotwo.qzz.io/map2.png'
-    },
-    point: {
-      normal: 'https://cotwo.qzz.io/point1.png',
-      selected: 'https://cotwo.qzz.io/point2.png'
-    },
-    home: {
-      normal: 'https://cotwo.qzz.io/emotion1.png',
-      selected: [
-        'https://cotwo.qzz.io/emotion2.png',
-        'https://cotwo.qzz.io/emotion3.png',
-        'https://cotwo.qzz.io/emotion4.png',
-        'https://cotwo.qzz.io/emotion5.png'
-      ]
-    }
-  }
+
 }
 
 module.exports = config

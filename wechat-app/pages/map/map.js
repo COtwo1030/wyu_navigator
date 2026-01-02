@@ -2,8 +2,7 @@ const config = require('../../config.js')
 
 Page({
   data: {
-    // 导航栏配置（修复乱码）
-    nav: config.navigationBar,
+    nav: { title: '校园导航', back: false, animated: false },
     // 地图基础设置
     mapSettings: config.map.settings,
     // 地图初始视野（显式赋值以兼容运行环境）
@@ -125,7 +124,7 @@ Page({
           id: (isNaN(Number(item.id)) ? Math.floor(Math.random()*1000000) : Number(item.id)), // 数字ID
           longitude: Number(item.x) || 0, // 转数字+默认值
           latitude: Number(item.y) || 0,
-          iconPath: String(item.icon || '').trim().replace(/^[`'"]|[`'\"]$/g, '') || config.map.marker?.iconPath,
+          iconPath: String(item.icon || ''),
           width: (config.map.markerSize?.width || 30),
           height: (config.map.markerSize?.height || 30),
           callout: {
@@ -292,6 +291,18 @@ Page({
       toCoord: { latitude: Number(s.y), longitude: Number(s.x) },
       showToSuggestions: false
     });
+  },
+  onQuickNavTo(e) {
+    const idx = e.currentTarget.dataset.index;
+    const s = this.data.toSuggestions[idx];
+    if (!s) return;
+    this.setData({
+      toLabel: s.name,
+      searchToText: s.name,
+      toCoord: { latitude: Number(s.y), longitude: Number(s.x) },
+      showToSuggestions: false
+    });
+    this.onRoute();
   },
   onClearTo() {
     this.setData({
@@ -477,8 +488,8 @@ Page({
     const to = this.data.toCoord;
     const fromName = this.data.fromLabel;
     const toName = this.data.toLabel;
-    const originIcon = config.map.routeIcons?.origin;
-    const destIcon = config.map.routeIcons?.destination;
+    const originIcon = '/images/tabbar/origin.png';
+    const destIcon = '/images/tabbar/destination.png';
     const markers = base.map(m => Object.assign({}, m));
     const markByName = (name, icon) => {
       const idx = markers.findIndex(m => (m.callout && m.callout.content) === name);

@@ -1,6 +1,7 @@
 const config = require('../../config.js')
 Page({
   data: {
+    nav: { title: '地点', back: false, animated: false },
     categories: [],
     items: [],
     selectedCategory: '',
@@ -61,16 +62,18 @@ Page({
     })
   },
   normalizeImg(s) {
-    const str = String(s || '').replace(/[`'"]/g, '').trim()
-    const urls = str.match(/https?:\/\/[^\s]+/g)
-    if (urls && urls.length) return urls[urls.length - 1]
-    return '/static/Wuyi_University_Logo.png'
-  },
-  normalizeIcon(s) {
-    const str = String(s || '').replace(/[`'"]/g, '').trim()
+    const str = String(s || '').replace(/[`'\"]/g, '').trim()
     const urls = str.match(/https?:\/\/[^\s]+/g)
     if (urls && urls.length) return urls[urls.length - 1]
     return ''
+  },
+  normalizeIcon(s) {
+    const str = String(s || '').replace(/[`'\"]/g, '').trim()
+    if (!str) return ''
+    if (str.startsWith('/')) return str
+    const withExt = /\.\w+$/.test(str) ? str : `${str}.png`
+    if (str.includes('/')) return `/images/${withExt}`
+    return `/images/tabbar/${withExt}`
   },
   onPickCategory(e) {
     const cat = e.currentTarget.dataset.cat

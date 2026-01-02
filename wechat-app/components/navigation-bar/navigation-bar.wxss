@@ -7,6 +7,12 @@
   --height: 48px;
 }
 
+/* 默认主题 */
+.nav-default .weui-navigation-bar__inner {
+  color: black;
+  background: #FFF;
+}
+
 .weui-navigation-bar {
   overflow: hidden;
   color: var(--weui-FG-0);

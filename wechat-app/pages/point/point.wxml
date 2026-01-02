@@ -1,4 +1,4 @@
-<navigation-bar title="{{'地点'}}" back="{{false}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<navigation-bar extClass="nav-default" title="{{nav.title}}" back="{{nav.back}}" animated="{{nav.animated}}"></navigation-bar>
 <view class="point">
   <view class="pane">
     <scroll-view scroll-y class="left">
@@ -14,7 +14,7 @@
       <view class="grid">
         <block wx:for="{{displayItems}}" wx:key="id">
           <view class="card" bindtap="onTapItem" data-index="{{index}}">
-            <image class="cover" src="{{item.img}}" mode="aspectFill"></image>
+            <image wx:if="{{item.img}}" class="cover" src="{{item.img}}" mode="aspectFill"></image>
             <view class="name">{{item.name}}</view>
           </view>
         </block>
@@ -24,7 +24,7 @@
   <view wx:if="{{showModal}}" class="mask" bindtap="onCloseModal"></view>
   <view wx:if="{{showModal}}" class="dialog" catchtap="noop">
     <view class="dlg-name">{{modalItem.name}}</view>
-    <image class="dlg-cover" src="{{modalItem.img}}" mode="aspectFill" bindtap="onPreviewImage"></image>
+    <image wx:if="{{modalItem.img}}" class="dlg-cover" src="{{modalItem.img}}" mode="aspectFill" bindtap="onPreviewImage"></image>
     <view class="dlg-desc">{{modalItem.desc}}</view>
     <view class="dlg-actions">
       <button class="dlg-btn" bindtap="onSetAsTo">设为终点</button>
