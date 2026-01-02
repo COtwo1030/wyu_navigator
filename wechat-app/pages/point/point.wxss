@@ -1,0 +1,15 @@
+page, .point {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f7f8fa;
+}
+.pane { flex: 1; display: flex; }
+.left { width: 100px; background: #fff; border-right: 1px solid #eee; }
+.right { flex: 1; background: #fff; }
+.cat { padding: 12px; font-size: 14px; color: #333; }
+.cat.active { color: #4CAF50; font-weight: 600; }
+.grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; }
+.card { width: calc((100% - 24px) / 3); background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+.cover { width: 100%; height: 90px; background: #f2f2f2; }
+.name { padding: 8px; font-size: 13px; color: #333; }

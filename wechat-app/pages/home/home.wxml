@@ -1,4 +1,6 @@
 <navigation-bar title="{{'首页'}}" back="{{false}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
-<view class="index">
-  <view class="title">欢迎</view>
+<view class="home">
+  <view class="content">
+    <view class="title">欢迎</view>
+  </view>
 </view>

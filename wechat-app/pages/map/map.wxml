@@ -1,0 +1,95 @@
+<navigation-bar title="{{nav.title}}" back="{{nav.back}}" color="{{nav.color}}" background="{{nav.background}}" animated="{{nav.animated}}"></navigation-bar>
+<view class="maparea">
+  <map
+    id="map"
+    longitude="{{longitude}}"
+    latitude="{{latitude}}"
+    scale="{{scale}}"
+    polyline="{{polyline}}"
+    markers="{{markers}}"
+    bindmarkertap="onMarkerTap"
+    enable-3D="{{enable3D}}"
+    enable-overlooking="{{enableOverlooking}}"
+    skew="{{skew}}"
+    enable-zoom="{{mapSettings.enableZoom}}"
+    show-compass="{{mapSettings.showCompass}}"
+    show-location="{{mapSettings.showLocation}}"
+    enable-poi="{{showPoi}}"
+    class="map">
+  </map>
+
+  <view class="route-panel">
+    <!-- 核心：左输入 + 右操作 布局 -->
+    <view class="route-form">
+      <!-- 左侧：起点/终点输入区 -->
+      <view class="route-fields">
+        <!-- 起点输入 -->
+        <view class="route-label {{fromLabel === '起点' ? 'placeholder' : ''}}">
+          <view class="dot red"></view>
+          <input 
+            class="route-input" 
+            value="{{searchFromText}}" 
+            placeholder="起点" 
+            placeholder-style="color:#999" 
+            confirm-type="search" 
+            bindinput="onInputFrom" 
+            bindfocus="onFocusFrom" 
+            bindblur="onBlurFrom" 
+            bindconfirm="onConfirmFrom"/>
+          <view class="clear-btn" wx:if="{{searchFromText || fromCoord}}" bindtap="onClearFrom">×</view>
+        </view>
+        <!-- 起点建议列表 -->
+        <view class="suggest-list" wx:if="{{showFromSuggestions && fromSuggestions.length}}">
+          <block wx:for="{{fromSuggestions}}" wx:key="id">
+            <view class="suggest-item" bindtap="onPickFromSuggestion" data-index="{{index}}">{{item.name}}</view>
+          </block>
+        </view>
+
+        <!-- 分割线 + 交换按钮（核心调整：交换按钮居中在分割线右侧） -->
+        <view class="route-separator-wrap">
+          <view class="route-separator"></view>
+          <view class="route-swap" bindtap="onSwap">
+            <view class="swap-text">⇅</view>
+          </view>
+        </view>
+
+        <!-- 终点输入 -->
+        <view class="route-label {{toLabel === '终点' ? 'placeholder' : ''}}">
+          <view class="dot blue"></view>
+          <input 
+            class="route-input" 
+            value="{{searchToText}}" 
+            placeholder="终点" 
+            placeholder-style="color:#999" 
+            confirm-type="search" 
+            bindinput="onInputTo" 
+            bindfocus="onFocusTo" 
+            bindblur="onBlurTo" 
+            bindconfirm="onConfirmTo"/>
+          <view class="clear-btn" wx:if="{{searchToText || toCoord}}" bindtap="onClearTo">×</view>
+        </view>
+        <!-- 终点建议列表 -->
+        <view class="suggest-list" wx:if="{{showToSuggestions && toSuggestions.length}}">
+          <block wx:for="{{toSuggestions}}" wx:key="id">
+            <view class="suggest-item" bindtap="onPickToSuggestion" data-index="{{index}}">{{item.name}}</view>
+          </block>
+        </view>
+      </view>
+
+      <!-- 右侧：交通方式 + 路线按钮（交换按钮已移到分割线，此处仅保留交通+路线） -->
+      <view class="route-actions">
+        <!-- 交通方式（在上） -->
+        <view class="mode-tabs">
+          <view class="mode-tab {{routeMode === 'walking' ? 'active' : ''}}" data-mode="walking" bindtap="onSelectMode">步行</view>
+          <view class="mode-tab {{routeMode === 'bicycling' ? 'active' : ''}}" data-mode="bicycling" bindtap="onSelectMode">骑行</view>
+          <view class="mode-tab {{routeMode === 'driving' ? 'active' : ''}}" data-mode="driving" bindtap="onSelectMode">驾车</view>
+        </view>
+        <!-- 路线按钮（单独展示，大小为交通按钮3倍+绿色） -->
+        <view class="route-btn" bindtap="onRoute">路线</view>
+      </view>
+    </view>
+
+    <!-- 路线信息 -->
+    <view class="route-info"><view class="info-text">{{routeInfo}}</view></view>
+  </view>
+</view>

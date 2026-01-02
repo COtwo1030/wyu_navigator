@@ -1,0 +1,20 @@
+<navigation-bar title="{{'地点'}}" back="{{false}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view class="point">
+  <view class="pane">
+    <scroll-view scroll-y class="left">
+      <block wx:for="{{categories}}" wx:key="cat">
+        <view class="cat {{item === selectedCategory ? 'active' : ''}}" bindtap="onPickCategory" data-cat="{{item}}">{{item}}</view>
+      </block>
+    </scroll-view>
+    <scroll-view scroll-y class="right">
+      <view class="grid">
+        <block wx:for="{{displayItems}}" wx:key="id">
+          <view class="card">
+            <image class="cover" src="{{item.img}}" mode="aspectFill"></image>
+            <view class="name">{{item.name}}</view>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+</view>

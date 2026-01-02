@@ -1,0 +1,266 @@
+/**index.wxss**/
+page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.maparea {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.map {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 路线规划面板 */
+.route-panel {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+/* 核心：左输入 + 右操作 水平布局 */
+.route-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 左侧：起点/终点输入区（占主要宽度） */
+.route-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 分割线+交换按钮容器：解决重合问题 */
+.route-separator-wrap {
+  position: relative;
+  width: 100%;
+  margin: 6px 0;
+  /* 核心1：右侧预留按钮空间，分割线不延伸到这里 */
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+.route-separator {
+  width: 100%;
+  height: 1px;
+  background: #eee;
+}
+/* 交换按钮：分割线右侧垂直居中 + 避免重合 */
+.route-swap {
+  position: absolute;
+  right: -26px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* 核心2：白色背景+层级，完全遮挡下方分割线 */
+  background: #fff;
+  border-radius: 50%;
+  z-index: 10;
+}
+.swap-text {
+  font-size: 30px;
+  color: #666;
+}
+
+/* 右侧：交通方式+路线按钮 竖排容器（已往右偏移8px） */
+.route-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+  justify-content: flex-start;
+  /* 核心修改：往右平移12 px，视觉协调且不溢出 */
+  transform: translateX(12px);
+}
+
+/* 交通方式按钮（基础大小） */
+.mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.mode-tab {
+  /* 交通按钮基础尺寸：宽50px，高26px */
+  width: 50px;
+  height: 26px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: #f5f7fb;
+  color: #555;
+  font-size: 12px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mode-tab.active {
+  background: #5c9aff;
+  color: #fff;
+}
+
+/* 路线按钮：绿色 */
+.route-btn {
+  width: 160px;
+  height: 40px;
+  /* 绿色样式 */
+  background: #4CAF50;
+  color: #fff;
+  font-size: 16px;
+  border-radius: 20px;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  outline: none;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 路线按钮点击效果 */
+.route-btn:active {
+  background: #388E3C;
+  transform: scale(0.98);
+}
+
+/* 路线标签（起点/终点） */
+.route-label {
+  font-size: 18px;
+  color: #333;
+  font-weight: 500;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+.route-label.placeholder {
+  color: #999;
+}
+
+/* 输入框样式 */
+.route-input {
+  flex: 1;
+  font-size: 16px;
+  color: #333;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0 0;
+  box-sizing: border-box;
+}
+
+/* 清除按钮 */
+.clear-btn {
+  margin-left: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: #f2f2f2;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  transform: translateX(-8px); /* 往右平移8px，可调整数值 */
+}
+
+/* 地址建议列表 */
+.suggest-list {
+  width: 100%;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.suggest-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 14px;
+  color: #333;
+  box-sizing: border-box;
+}
+.suggest-item:last-child {
+  border-bottom: none;
+}
+
+/* 起点/终点圆点 */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+.dot.red { background: #1cb743ff; }
+.dot.blue { background: #b71c1c; }
+
+/* 路线信息区域 */
+.route-info {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  width: 100%;
+  box-sizing: border-box;
+}
+.info-text {
+  color: #333;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* 地面叠加层 */
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.overlay-image {
+  width: 100%;
+  height: 100%;
+  opacity: 0.6;
+}
+
+/* 文字省略 */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

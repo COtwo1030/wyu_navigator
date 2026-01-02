@@ -1,6 +1,9 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/map/map",
+    "pages/point/point",
+    "pages/home/home"
   ],
   "window": {
     "navigationBarTextStyle": "black",
@@ -19,5 +22,29 @@
   "requiredPrivateInfos": [
     "getLocation"
   ],
-  "subPackages": []
+  "subPackages": [],
+  "tabBar": {
+    "position": "bottom",
+    "color": "#666",
+    "selectedColor": "#4CAF50",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/map/map",
+        "text": "地图"
+      },
+      {
+        "pagePath": "pages/point/point",
+        "text": "地点"
+      },
+      {
+        "pagePath": "pages/home/home",
+        "text": "我的"
+      }
+    ]
+  }
 }
