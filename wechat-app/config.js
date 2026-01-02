@@ -61,11 +61,11 @@ const config = {
     // 地图标记配置
     marker: {
       // 默认图标路径
-      iconPath: 'https://cotwo.qzz.io/svg/mark.svg'
+      iconPath: 'https://cotwo.qzz.io/mark.png'
     },
     routeIcons: {
-      origin: 'https://cotwo.qzz.io/svg/origin.svg',
-      destination: 'https://cotwo.qzz.io/svg/destination.svg'
+      origin: 'https://cotwo.qzz.io/origin.png',
+      destination: 'https://cotwo.qzz.io/destination.png'
     }
   }
 }

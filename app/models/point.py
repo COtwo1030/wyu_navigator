@@ -12,3 +12,4 @@ class Point(Base):
     category : Mapped[str] = mapped_column(String(20), nullable=True) # 地点分类，可空
     description : Mapped[str] = mapped_column(String(200), nullable=True) # 地点描述，可空
     img : Mapped[str] = mapped_column(String(200), nullable=True) # 地点图片URL，可空
+    icon : Mapped[str] = mapped_column(String(200), nullable=True) # 地点图标URL，可空

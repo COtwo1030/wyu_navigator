@@ -11,3 +11,4 @@ class PointData(BaseModel):
     category: Annotated[str, Field(max_length=20, description="地点分类")] = None
     description: Annotated[str, Field(max_length=200, description="地点描述")] = None
     img: Annotated[str, Field(max_length=200, description="地点图片URL")] = None
+    icon: Annotated[str, Field(max_length=200, description="地点图标URL")] = None
