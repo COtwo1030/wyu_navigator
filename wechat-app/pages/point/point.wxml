@@ -7,14 +7,28 @@
       </block>
     </scroll-view>
     <scroll-view scroll-y class="right">
+      <view wx:if="{{selectedCategory}}" class="header">
+        <image wx:if="{{headerIcon}}" class="header-icon" src="{{headerIcon}}" mode="aspectFit"></image>
+        <view class="header-text">{{selectedCategory}}</view>
+      </view>
       <view class="grid">
         <block wx:for="{{displayItems}}" wx:key="id">
-          <view class="card">
+          <view class="card" bindtap="onTapItem" data-index="{{index}}">
             <image class="cover" src="{{item.img}}" mode="aspectFill"></image>
             <view class="name">{{item.name}}</view>
           </view>
         </block>
       </view>
     </scroll-view>
+  </view>
+  <view wx:if="{{showModal}}" class="mask" bindtap="onCloseModal"></view>
+  <view wx:if="{{showModal}}" class="dialog" catchtap="noop">
+    <view class="dlg-name">{{modalItem.name}}</view>
+    <image class="dlg-cover" src="{{modalItem.img}}" mode="aspectFill" bindtap="onPreviewImage"></image>
+    <view class="dlg-desc">{{modalItem.desc}}</view>
+    <view class="dlg-actions">
+      <button class="dlg-btn" bindtap="onSetAsTo">设为终点</button>
+      <button class="dlg-btn primary" bindtap="onNavNow">一键导航</button>
+    </view>
   </view>
 </view>

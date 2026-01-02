@@ -4,7 +4,10 @@
   "libVersion": "trial",
   "packOptions": {
     "ignore": [],
-    "include": []
+    "include": [
+      { "type": "file", "value": "images/tabbar/*" },
+      { "type": "file", "value": "images/*" }
+    ]
   },
   "setting": {
     "coverView": true,

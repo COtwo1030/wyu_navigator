@@ -35,6 +35,21 @@ Page({
     showToSuggestions: false,
     routeMode: 'walking'
   },
+  onShow() {
+    let pending = null
+    try { pending = wx.getStorageSync('pendingTo') } catch (e) {}
+    if (pending && pending.latitude && pending.longitude) {
+      this.setData({
+        toLabel: pending.toLabel || '终点',
+        searchToText: pending.toLabel || '',
+        toCoord: { latitude: Number(pending.latitude), longitude: Number(pending.longitude) }
+      })
+      try { wx.removeStorageSync('pendingTo') } catch (e) {}
+      if (pending.autoRoute) {
+        this.onRoute()
+      }
+    }
+  },
 
   onReady() {
     // 新版小程序推荐用selectComponent获取地图上下文（兼容旧版）
@@ -110,7 +125,7 @@ Page({
           id: (isNaN(Number(item.id)) ? Math.floor(Math.random()*1000000) : Number(item.id)), // 数字ID
           longitude: Number(item.x) || 0, // 转数字+默认值
           latitude: Number(item.y) || 0,
-          iconPath: String(item.icon || '').trim().replace(/^[`'"]|[`'\"]$/g, '') || (config.map.marker?.iconPath || '/static/mark.png'),
+          iconPath: String(item.icon || '').trim().replace(/^[`'"]|[`'\"]$/g, '') || config.map.marker?.iconPath,
           width: (config.map.markerSize?.width || 30),
           height: (config.map.markerSize?.height || 30),
           callout: {

@@ -31,19 +31,27 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页"
+        "text": "首页",
+        "iconPath": "/images/tabbar/index.png",
+        "selectedIconPath": "/images/tabbar/index-active.png"
       },
       {
         "pagePath": "pages/map/map",
-        "text": "地图"
+        "text": "地图",
+        "iconPath": "/images/tabbar/map.png",
+        "selectedIconPath": "/images/tabbar/map-active.png"
       },
       {
         "pagePath": "pages/point/point",
-        "text": "地点"
+        "text": "地点",
+        "iconPath": "/images/tabbar/point.png",
+        "selectedIconPath": "/images/tabbar/point-active.png"
       },
       {
         "pagePath": "pages/home/home",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "/images/tabbar/home.png",
+        "selectedIconPath": "/images/tabbar/home-active.png"
       }
     ]
   }

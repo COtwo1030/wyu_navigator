@@ -83,6 +83,29 @@ const config = {
       fitAllPointsOnLoad: false
     },
     routeIconSize: { width: 24, height: 24 } // 路线起点/终点高亮图标显示尺寸（px）
+  },
+  tabBarIcons: {
+    index: {
+      normal: 'https://cotwo.qzz.io/index1.png',
+      selected: 'https://cotwo.qzz.io/index2.png'
+    },
+    map: {
+      normal: 'https://cotwo.qzz.io/map1.png',
+      selected: 'https://cotwo.qzz.io/map2.png'
+    },
+    point: {
+      normal: 'https://cotwo.qzz.io/point1.png',
+      selected: 'https://cotwo.qzz.io/point2.png'
+    },
+    home: {
+      normal: 'https://cotwo.qzz.io/emotion1.png',
+      selected: [
+        'https://cotwo.qzz.io/emotion2.png',
+        'https://cotwo.qzz.io/emotion3.png',
+        'https://cotwo.qzz.io/emotion4.png',
+        'https://cotwo.qzz.io/emotion5.png'
+      ]
+    }
   }
 }
 

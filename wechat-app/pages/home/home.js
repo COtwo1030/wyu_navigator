@@ -1,3 +1,5 @@
+const config = require('../../config.js')
 Page({
-  // 保留空页面逻辑以配合简化的“欢迎”展示
+  onShow() {
+  }
 })
