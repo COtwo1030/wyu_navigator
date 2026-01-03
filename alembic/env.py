@@ -11,6 +11,7 @@ from app.settings import ASYNC_DB_URL
 from app.models.base import Base
 from app.models.auth import User, EmailCode
 from app.models.point import Point
+from app.models.article import Article
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

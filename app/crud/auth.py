@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.shemas.auth import RegisterData
+from app.schemas.auth import RegisterData
 from app.models.auth import User, EmailCode
 
 class UserCRUD:

@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from loguru import logger
 from app.crud.point import PointCRUD
-from app.shemas.point import PointData
+from app.schemas.point import PointData
 
 class PointService:
     def __init__(self, session: AsyncSession):

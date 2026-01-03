@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.point import Point
 
-from app.shemas.point import PointData
+from app.schemas.point import PointData
 
 class PointCRUD:
     def __init__(self, session: AsyncSession) -> bool:

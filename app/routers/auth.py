@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependences import get_session
-from app.shemas.auth import RegisterData, LoginData, ResetPasswordData
+from app.dependencies import get_session
+from app.schemas.auth import RegisterData, LoginData, ResetPasswordData
 from app.services.auth import UserService, EmailCodeService
 
 router = APIRouter(prefix="/auth",tags=["auth"])

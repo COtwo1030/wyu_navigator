@@ -7,8 +7,8 @@ from loguru import logger
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from aiosmtplib.errors import SMTPException
 
-from app.dependences import get_hash_password, verify_password
-from app.shemas.auth import RegisterData, LoginData, ResetPasswordData
+from app.dependencies import get_hash_password, verify_password
+from app.schemas.auth import RegisterData, LoginData, ResetPasswordData
 from app.crud.auth import UserCRUD, EmailCodeCRUD
 import app.settings as settings
 

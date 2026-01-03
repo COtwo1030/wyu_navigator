@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependences import get_session
-from app.shemas.point import PointData
+from app.dependencies import get_session
+from app.schemas.point import PointData
 from app.services.point import PointService
 
 router = APIRouter(prefix="/point",tags=["point"])
