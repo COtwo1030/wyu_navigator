@@ -89,6 +89,20 @@ class UserCRUD:
         )
         return user.scalar()
 
+    async def search_user_id_by_email(self, email: str) -> int|None:
+        """
+        查询邮箱对应的用户ID
+        参数:
+            email: 邮箱
+        返回:
+            存在：用户ID
+            不存在：None
+        """
+        user = await self.session.execute(
+            select(User.id).filter(User.email == email)
+        )
+        return user.scalar()
+
 class EmailCodeCRUD:
     def __init__(self, session: AsyncSession):
         self.session = session

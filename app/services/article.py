@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from loguru import logger
 
 from app.crud.article import ArticleCRUD
 from app.schemas.article import ArticleData
@@ -8,7 +9,7 @@ class ArticleService:
         self.session = session
 
     # 创建文章
-    async def create(self, article: ArticleData):
+    async def create(self, article: ArticleData, user_id: int):
         """
         创建文章
         参数:
@@ -16,4 +17,5 @@ class ArticleService:
         返回:
             文章模型
         """
-        return await ArticleCRUD.create(self.session, article)
+        logger.info(f"用户 {user_id} 创建文章: {article}")
+        return await ArticleCRUD(self.session).create(article, user_id)

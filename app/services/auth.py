@@ -7,7 +7,7 @@ from loguru import logger
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from aiosmtplib.errors import SMTPException
 
-from app.dependencies import get_hash_password, verify_password
+from app.dependencies import get_hash_password, verify_password, create_access_token
 from app.schemas.auth import RegisterData, LoginData, ResetPasswordData
 from app.crud.auth import UserCRUD, EmailCodeCRUD
 import app.settings as settings
@@ -22,7 +22,7 @@ class UserService:
         参数:
             data: LoginData
         返回:
-            用户名
+            dict: 包含access_token和token_type的字典，以及用户名
         """
         # 根据邮箱获取数据库中的密码
         db_hashed_password = await UserCRUD(self.session).search_user_hashed_password(email=data.email)
@@ -36,8 +36,10 @@ class UserService:
             raise HTTPException(status_code=400, detail="密码错误")
         # 获取用户名
         username = await UserCRUD(self.session).search_username(email=data.email)
+        user_id = await UserCRUD(self.session).search_user_id_by_email(email=data.email)
         logger.success(f"用户登录成功: email={data.email}")
-        return {"message": "登录成功", "username": username}
+        token = create_access_token(user_id)
+        return {"access_token": token, "token_type": "bearer", "message": "登录成功", "username": username}
     
     async def user_register(self, data: RegisterData):
         """

@@ -10,7 +10,7 @@ class ArticleCRUD:
         self.session = session
 
     # 创建文章
-    async def create(self, article: ArticleData):
+    async def create(self, article: ArticleData, user_id: int):
         """
         创建文章
         参数:
@@ -18,8 +18,8 @@ class ArticleCRUD:
         返回:
             文章模型
         """
-        # 将文章数据转换为文章模型
-        article_model = Article(**article.model_dump())
+        # 将文章数据转换为文章模型并写入关联的用户ID
+        article_model = Article(**article.model_dump(), user_id=user_id)
         self.session.add(article_model)
         await self.session.commit()
         return article_model

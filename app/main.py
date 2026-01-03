@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from app.routers import auth, point
+from app.routers import auth, point, article
 from app.loggers import setup_logger
 
 @asynccontextmanager
@@ -24,6 +24,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(point.router)
+app.include_router(article.router)
 
 @app.get("/")
 def read_root():
