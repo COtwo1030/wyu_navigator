@@ -15,10 +15,15 @@ class RegisterData(BaseModel):
             raise ValueError("两次密码输入不一致")
         return self
 
-# 登录请求体
-class LoginData(BaseModel):
+# 密码登录请求体
+class PswLoginData(BaseModel):
     email: Annotated[EmailStr, Field(description="邮箱")]
     password: Annotated[str, Field(min_length=6, max_length=20, description="密码")]
+
+# 验证码登录请求体
+class CodeLoginData(BaseModel):
+    email: Annotated[EmailStr, Field(description="邮箱")]
+    code: Annotated[str, Field(min_length=4, max_length=4, description="邮箱验证码")]
 
 # 重置密码请求体
 class ResetPasswordData(BaseModel):

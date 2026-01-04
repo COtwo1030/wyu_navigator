@@ -1,0 +1,11 @@
+page, .post { height: 100vh; display: flex; flex-direction: column; background: #f7f8fa; }
+.form { padding: 16px; }
+.input-wrap { position: relative; display: flex; align-items: center; margin-bottom: 12px; }
+.icon { width: 20px; height: 20px; margin: 0 8px; pointer-events: none; }
+.input { flex: 1; height: 44px; border-radius: 8px; background: #fff; padding: 0 12px; border: 1px solid #eee; }
+.textarea-wrap { margin-top: 8px; }
+.textarea { width: 100%; min-height: 160px; border-radius: 8px; background: #fff; padding: 8px 12px; border: 1px solid #eee; box-sizing: border-box; font-size: 14px; }
+.btn { height: 44px; border-radius: 22px; border: none; background: #4CAF50; color: #fff; }
+.tag-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.tag-btn { height: 28px; padding: 0 10px; border-radius: 14px; background: #e9eef8; color: #2E6ADF; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.selected-tag { height: 28px; padding: 0 10px; border-radius: 14px; background: #fff2e8; color: #fa6400; border: 1px solid #ffd5b3; font-size: 12px; display: flex; align-items: center; }

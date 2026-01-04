@@ -1,0 +1,64 @@
+page, .login {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f7f8fa;
+}
+.form { padding: 16px; }
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.icon {
+  width: 20px;
+  height: 20px;
+  margin: 0 8px;
+}
+.input {
+  flex: 1;
+  height: 44px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 12px;
+  border: 1px solid #eee;
+}
+.code-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 28px;
+  min-width: 72px;
+  padding: 0 6px;
+  border-radius: 14px;
+  background: #e9eef8;
+  color: #2E6ADF;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+.code-input { padding-right: 88px; }
+.links {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.links-right {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+.link { color: #2E6ADF; font-size: 12px; }
+.btn {
+  height: 44px;
+  border-radius: 22px;
+  border: none;
+  background: #4CAF50;
+  color: #fff;
+}

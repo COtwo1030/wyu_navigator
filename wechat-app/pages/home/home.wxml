@@ -1,6 +1,8 @@
 <navigation-bar title="{{'首页'}}" back="{{false}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
 <view class="home">
-  <view class="content">
-    <view class="title">欢迎</view>
+
+  <view class="content"></view>
+  <view class="bottom-bar">
+    <button class="btn primary" bindtap="navToLogin">登录</button>
   </view>
 </view>

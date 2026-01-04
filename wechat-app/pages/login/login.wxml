@@ -1,0 +1,34 @@
+<navigation-bar title="{{'登录'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view class="login">
+  <view class="form">
+    <view class="input-wrap">
+      <image class="icon" src="/images/tabbar/email.png" mode="aspectFit"></image>
+      <input class="input" type="text" placeholder="请输入邮箱" value="{{email}}" bindinput="onEmailInput" />
+    </view>
+
+    <block wx:if="{{isPwdMode}}">
+      <view class="input-wrap">
+        <image class="icon" src="/{{pwdVisible ? 'images/tabbar/密码可见.png' : 'images/tabbar/密码不可见.png'}}" mode="aspectFit" bindtap="togglePwdVisible"></image>
+        <input class="input" password="{{!pwdVisible}}" placeholder="请输入密码" value="{{password}}" bindinput="onPasswordInput" />
+      </view>
+    </block>
+    <block wx:else>
+      <view class="input-wrap">
+        <image class="icon" src="/images/tabbar/code.png" mode="aspectFit"></image>
+        <input class="input code-input" type="text" placeholder="请输入验证码" value="{{code}}" bindinput="onCodeInput" />
+        <button class="code-btn" bindtap="sendCode">获取验证码</button>
+      </view>
+    </block>
+
+    <view class="links">
+      <view class="links-left">
+        <text class="link" bindtap="toggleMode">{{isPwdMode ? '验证码登录' : '密码登录'}}</text>
+      </view>
+      <view class="links-right">
+        <text class="link" bindtap="navToRegister">注册</text>
+        <text class="link" bindtap="navToReset">忘记密码</text>
+      </view>
+    </view>
+    <button class="btn primary" bindtap="onSubmit">登录</button>
+  </view>
+</view>

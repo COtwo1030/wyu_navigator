@@ -11,14 +11,36 @@
  * - map.routeIcons/routeIconSize：路线起点/终点高亮图标与尺寸
  * - map.behavior.fitAllPointsOnLoad：是否在进入页面时自动缩放以包含全部点位
  */
+//const BASE = 'http://127.0.0.1:8000'
+const BASE = 'http://10.40.130.240:8000'
 const config = {
   // 后端接口配置
   api: {
     // 获取地图点位列表接口
-    pointList: 'http://10.40.130.240:8080/point/list',
+    pointList: `${BASE}/point/list`,
+    //pointList: 'http://10.40.130.240:8080/point/list',
+    auth: {
+      // 获取验证码（code）接口
+      code: `${BASE}/auth/code`,
+      // 账号密码登录接口
+      pswlogin: `${BASE}/auth/pswlogin`,
+      // 邮箱登录接口
+      emaillogin: `${BASE}/auth/emaillogin`,
+      register: `${BASE}/auth/register`,
+      // 重置密码接口
+      resetPassword: `${BASE}/auth/reset-password`,
+
+    },
+    // 文章服务接口
+    article: {
+      // 创建文章接口
+      create: `${BASE}/article/create`,
+      // 分页获取文章接口
+      page: `${BASE}/article/page`
+    },
     // 腾讯地图服务配置（请将 key 替换为你自己的密钥）
     tencent: {
-      key: 'SWABZ-BCY64-WIHUL-KCDGA-OMFUV-JWFS5', // 腾讯地图服务密钥
+      key: 'SWABZ-BCY64-WIHUL-KCDGA-OMFUV-JWFS5',
       // 路径说明：此为基础端点（默认步行），实际模式由前端 routeMode 动态拼接为 /{walking|bicycling|driving}
       directionUrl: 'https://apis.map.qq.com/ws/direction/v1/walking'
     }

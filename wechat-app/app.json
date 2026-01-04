@@ -3,7 +3,11 @@
     "pages/index/index",
     "pages/map/map",
     "pages/point/point",
-    "pages/home/home"
+    "pages/home/home",
+    "pages/login/login",
+    "pages/register/register",
+    "pages/reset/reset",
+    "pages/post/post"
   ],
   "window": {
     "navigationBarTextStyle": "black",
@@ -40,6 +44,12 @@
         "text": "地图",
         "iconPath": "/images/tabbar/map.png",
         "selectedIconPath": "/images/tabbar/map-active.png"
+      },
+      {
+        "pagePath": "pages/post/post",
+        "text": "",
+        "iconPath": "/images/tabbar/post.png",
+        "selectedIconPath": "/images/tabbar/post.png"
       },
       {
         "pagePath": "pages/point/point",

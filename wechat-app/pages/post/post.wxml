@@ -1,0 +1,13 @@
+<navigation-bar title="{{'发表文章'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view class="post">
+  <view class="form">
+    <view class="tag-row">
+      <view class="tag-btn" bindtap="onPickTag"># 话题</view>
+      <view wx:if="{{tag}}" class="selected-tag">{{tag}}</view>
+    </view>
+    <view class="textarea-wrap">
+      <textarea class="textarea" placeholder="请输入内容" value="{{content}}" auto-height="true" bindinput="onContentInput"></textarea>
+    </view>
+    <button class="btn primary" bindtap="onSubmit">发表</button>
+  </view>
+</view>

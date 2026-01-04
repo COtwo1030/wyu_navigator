@@ -15,3 +15,11 @@ async def create_article(
     user_id: int = Depends(get_current_user_id), # token不放参数更安全
 ):
     return await ArticleService(session).create(data, user_id)
+
+# 按时间顺序分页获取最新的文章（一页十条）
+@router.get("/page", status_code=200,description="按时间顺序分页获取最新的文章（一页十条）")
+async def get_articles_by_page(
+    page: int = 1,
+    session: AsyncSession = Depends(get_session),
+):
+    return await ArticleService(session).get_by_page(page)

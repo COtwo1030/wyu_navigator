@@ -1,6 +1,7 @@
 from datetime import datetime 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 
 from app.schemas.auth import RegisterData
 from app.models.auth import User, EmailCode
@@ -108,20 +109,23 @@ class EmailCodeCRUD:
         self.session = session
     async def create_verification_code(self, email: str, code: str):
         """
-        创建邮箱验证码
+        发送验证码：不查询，直接覆盖
         参数:
             email: 邮箱
             code: 验证码
         返回:
             None
         """
-        email_code = EmailCode(
-            email=email,
-            code=code,
-            create_time=datetime.now()
-        )
-        self.session.add(email_code)
-        await self.session.commit()
+        try:
+            now = datetime.now()
+            stmt = insert(EmailCode).values(email=email, code=code, create_time=now).on_conflict_do_update(
+                index_elements=[EmailCode.email],
+                set_={"code": code, "create_time": now}
+            )
+            await self.session.execute(stmt)
+            await self.session.commit()
+        except:
+            return None
     
     async def search_code(self, email: str, code: str) -> EmailCode|None:
         """
@@ -140,3 +144,16 @@ class EmailCodeCRUD:
         except:
             return None
         return email_code.scalar()
+    
+    async def get_latest_code_time(self, email: str):
+        """
+        获取该邮箱最近一次验证码的创建时间
+        返回：datetime 或 None
+        """
+        result = await self.session.execute(
+            select(EmailCode)
+            .filter(EmailCode.email == email)
+            .order_by(EmailCode.create_time.desc())
+        )
+        latest = result.scalars().first()
+        return latest.create_time if latest else None

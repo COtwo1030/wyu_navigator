@@ -3,15 +3,20 @@ from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_session
-from app.schemas.auth import RegisterData, LoginData, ResetPasswordData
+from app.schemas.auth import RegisterData, PswLoginData, CodeLoginData, ResetPasswordData
 from app.services.auth import UserService, EmailCodeService
 
 router = APIRouter(prefix="/auth",tags=["auth"])
 
-# 登录
-@router.post("/login", status_code=200,description="用户登录")
-async def login(data: LoginData, session: AsyncSession = Depends(get_session)):
-    return await UserService(session).user_login(data)
+# 密码登录
+@router.post("/pswlogin", status_code=200,description="用户密码登录")
+async def login(data: PswLoginData, session: AsyncSession = Depends(get_session)):
+    return await UserService(session).psw_login(data)
+
+# 验证码登录
+@router.post("/emaillogin", status_code=200,description="用户验证码登录")
+async def login_email(data: CodeLoginData, session: AsyncSession = Depends(get_session)):
+    return await UserService(session).email_login(data)
 
 # 注册
 @router.post("/register", status_code=200,description="用户注册")

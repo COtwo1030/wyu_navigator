@@ -8,19 +8,44 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from aiosmtplib.errors import SMTPException
 
 from app.dependencies import get_hash_password, verify_password, create_access_token
-from app.schemas.auth import RegisterData, LoginData, ResetPasswordData
+from app.schemas.auth import RegisterData, PswLoginData, CodeLoginData, ResetPasswordData
 from app.crud.auth import UserCRUD, EmailCodeCRUD
 import app.settings as settings
 
 class UserService:
     def __init__(self, session: AsyncSession):
         self.session = session
-
-    async def user_login(self, data: LoginData):
+    
+    async def email_login(self, data: CodeLoginData):
         """
-        处理用户登录
+        处理用户验证码登录
         参数:
-            data: LoginData
+            data: CodeLoginData
+        返回:
+            dict: 包含access_token和token_type的字典，以及用户名
+        """
+        # 查询验证码
+        EmailCode = await EmailCodeCRUD(self.session).search_code(email=data.email, code=data.code)
+        if EmailCode is None:
+            logger.warning(f"登录失败: 验证码错误或不存在 - {data.email}")
+            raise HTTPException(status_code=400, detail="验证码错误或不存在")
+        # 检查验证码是否过期
+        if (datetime.now() - EmailCode.create_time).seconds > 600:
+            logger.warning(f"登录失败: 验证码过期 - {data.email}")
+            raise HTTPException(status_code=400, detail="验证码过期")
+        # 获取用户名
+        username = await UserCRUD(self.session).search_username(email=data.email)
+        user_id = await UserCRUD(self.session).search_user_id_by_email(email=data.email)
+        logger.success(f"用户登录成功: email={data.email}")
+        token = create_access_token(user_id)
+        return {"access_token": token, "token_type": "bearer", "message": "登录成功", "username": username}
+
+
+    async def psw_login(self, data: PswLoginData):
+        """
+        处理用户密码登录
+        参数:
+            data: PswLoginData
         返回:
             dict: 包含access_token和token_type的字典，以及用户名
         """
@@ -111,6 +136,10 @@ class EmailCodeService:
         返回:
             dict: {"message": "验证码发送成功"}
         """
+        latest_time = await self.email_code_crud.get_latest_code_time(email=email)
+        if latest_time and (datetime.now() - latest_time).seconds <= 10 * 60:
+            logger.warning(f"发送验证码失败: 邮箱在十分钟内已发送过验证码 - {email}")
+            raise HTTPException(status_code=400, detail="邮箱在十分钟内已发送过验证码")
         # 生成四位验证码
         code = str(random.randint(1000, 9999))
         # 发送验证码

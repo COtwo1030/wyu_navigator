@@ -23,3 +23,18 @@ class ArticleCRUD:
         self.session.add(article_model)
         await self.session.commit()
         return article_model
+    # 按时间顺序分页获取文章（原子操作）
+    async def get_by_page(self, offset: int, limit: int):
+        """
+        按创建时间倒序分页查询（不含业务计算）
+        参数:
+            offset: 偏移量
+            limit: 每页数量
+        返回:
+            文章模型列表
+        """
+        stmt = select(Article).order_by(Article.id.desc()).offset(offset).limit(limit)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+

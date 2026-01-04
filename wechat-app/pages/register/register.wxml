@@ -1,0 +1,27 @@
+<navigation-bar title="{{'注册'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view class="register">
+  <view class="form">
+    <view class="input-wrap">
+      <image class="icon" src="/images/tabbar/username.png" mode="aspectFit"></image>
+      <input class="input" type="text" placeholder="请输入用户名" value="{{username}}" bindinput="onUsernameInput" />
+    </view>
+    <view class="input-wrap">
+      <image class="icon" src="/images/tabbar/email.png" mode="aspectFit"></image>
+      <input class="input" type="text" placeholder="请输入邮箱" value="{{email}}" bindinput="onEmailInput" />
+    </view>
+    <view class="input-wrap">
+      <image class="icon" src="{{pwdVisible ? '/images/tabbar/密码可见.png' : '/images/tabbar/密码不可见.png'}}" mode="aspectFit" bindtap="togglePwdVisible"></image>
+      <input class="input" password="{{!pwdVisible}}" placeholder="请输入密码" value="{{password}}" bindinput="onPasswordInput" />
+    </view>
+    <view class="input-wrap">
+      <image class="icon" src="{{cpwdVisible ? '/images/tabbar/密码可见.png' : '/images/tabbar/密码不可见.png'}}" mode="aspectFit" bindtap="toggleCpwdVisible"></image>
+      <input class="input" password="{{!cpwdVisible}}" placeholder="请确认密码" value="{{confirm_password}}" bindinput="onConfirmPwdInput" />
+    </view>
+    <view class="input-wrap">
+      <image class="icon" src="/images/tabbar/code.png" mode="aspectFit"></image>
+      <input class="input code-input" type="text" placeholder="请输入验证码" value="{{code}}" bindinput="onCodeInput" />
+      <button class="code-btn" bindtap="sendCode">获取验证码</button>
+    </view>
+    <button class="btn primary" bindtap="onSubmit">注册</button>
+  </view>
+</view>
