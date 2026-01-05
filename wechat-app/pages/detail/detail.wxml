@@ -1,0 +1,4 @@
+<navigation-bar back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view style="padding:12px;color:#666;font-size:14px;">
+  正在跳转到文章详情页…
+</view>

@@ -10,6 +10,17 @@ page { background: #fff; }
 .time { font-size: 12px; color: #999; }
 .tag { display: inline-block; margin-bottom: 6px; padding: 2px 6px; border-radius: 12px; background: #f0f9eb; color: #67C23A; font-size: 12px; }
 .content { color: #333; line-height: 1.6; }
+.metrics { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.metrics-right { display: flex; gap: 16px; }
+.metric { display: flex; flex-direction: row; align-items: center; }
+.metric-icon { width: 18px; height: 18px; }
+.metric-num { margin-left: 6px; font-size: 12px; color: #666; }
 .footer { padding: 12px; text-align: center; }
 .loading { color: #666; font-size: 12px; }
 .nomore { color: #999; font-size: 12px; }
+.comment-overlay { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.96); box-shadow: 0 -6px 16px rgba(0,0,0,0.08); padding: 12px; z-index: 99; }
+.comment-box { display: flex; flex-direction: column; gap: 8px; }
+.comment-input { height: 38px; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0 10px; background: #fff; }
+.comment-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.comment-send { height: 34px; line-height: 34px; padding: 0 14px; border-radius: 17px; background: #4CAF50; color: #fff; border: none; }
+.comment-cancel { height: 34px; line-height: 34px; padding: 0 14px; border-radius: 17px; background: #e9eef8; color: #333; border: none; }

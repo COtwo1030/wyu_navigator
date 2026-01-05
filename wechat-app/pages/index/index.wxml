@@ -2,13 +2,29 @@
 <view class="index">
   <scroll-view scroll-y class="list" lower-threshold="80" bindscrolltolower="onScrollToLower">
     <block wx:for="{{articles}}" wx:key="id">
-      <view class="card">
+      <view class="card" bindtap="onCardTap" data-id="{{item.id}}">
         <view class="header">
           <text class="username">{{item.username}}</text>
           <text class="time">{{item.create_time}}</text>
         </view>
         <view wx:if="{{item.tag}}" class="tag">#{{item.tag}}</view>
         <view class="content">{{item.content}}</view>
+        <view class="metrics">
+          <view class="metric">
+            <image class="metric-icon" src="/images/tabbar/look.png" mode="aspectFit"></image>
+            <text wx:if="{{item.view_count}}" class="metric-num">{{item.view_count}}</text>
+          </view>
+          <view class="metrics-right">
+            <view class="metric">
+              <image class="metric-icon" src="/images/tabbar/like.png" mode="aspectFit"></image>
+              <text wx:if="{{item.like_count}}" class="metric-num">{{item.like_count}}</text>
+            </view>
+            <view class="metric" bindtap="onCommentTap" data-id="{{item.id}}">
+              <image class="metric-icon" src="/images/tabbar/comment.png" mode="aspectFit"></image>
+              <text wx:if="{{item.comment_count}}" class="metric-num">{{item.comment_count}}</text>
+            </view>
+          </view>
+        </view>
       </view>
     </block>
     <view class="footer">

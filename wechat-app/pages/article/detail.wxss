@@ -1,0 +1,39 @@
+page { background: #fff; }
+.detail { padding: 12px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.username { font-weight: 600; color: #333; }
+.time { font-size: 12px; color: #999; }
+.tag { display: inline-block; margin-bottom: 6px; padding: 2px 6px; border-radius: 12px; background: #f0f9eb; color: #67C23A; font-size: 12px; }
+.content { color: #333; line-height: 1.7; }
+
+.metrics { display: flex; gap: 16px; align-items: center; margin: 10px 0 16px; }
+.metric { display: flex; align-items: center; }
+.metric-icon { width: 18px; height: 18px; }
+.metric-num { margin-left: 6px; font-size: 12px; color: #666; }
+
+.comment-title { margin: 8px 0; font-size: 14px; color: #333; }
+.comment-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.c-header { display: flex; justify-content: space-between; align-items: center; }
+.c-username { color: #333; font-weight: 500; }
+.c-time { font-size: 12px; color: #999; }
+.c-content { color: #333; margin-top: 4px; }
+.c-actions { margin-top: 6px; display: flex; gap: 16px; align-items: center; }
+.c-meta { margin-top: 6px; display: flex; align-items: center; gap: 16px; }
+.c-action { display: flex; align-items: center; gap: 6px; }
+.c-icon { width: 18px; height: 18px; }
+.c-num { font-size: 12px; color: #666; }
+.c-reply { font-size: 12px; color: #4CAF50; }
+.c-toggle { margin-top: 6px; font-size: 12px; color: #999; }
+.replies { margin-top: 8px; padding-left: 12px; border-left: 2px solid #f0f0f0; display: flex; flex-direction: column; gap: 8px; }
+.reply-item { }
+.r-header { display: flex; align-items: center; justify-content: space-between; }
+.r-username { color: #333; font-weight: 500; }
+.r-content { color: #333; margin-top: 4px; }
+.r-meta { margin-top: 6px; display: flex; align-items: center; gap: 16px; }
+.r-time { font-size: 12px; color: #999; }
+.r-reply { font-size: 12px; color: #4CAF50; }
+.r-action { display: flex; align-items: center; gap: 6px; }
+
+.comment-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 8px 12px; box-shadow: 0 -6px 16px rgba(0,0,0,0.06); display: flex; gap: 8px; }
+.comment-input { flex: 1; height: 38px; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0 10px; }
+.like-icon { width: 28px; height: 28px; align-self: center; }

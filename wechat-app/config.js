@@ -36,7 +36,13 @@ const config = {
       // 创建文章接口
       create: `${BASE}/article/create`,
       // 分页获取文章接口
-      page: `${BASE}/article/page`
+      page: `${BASE}/article/page`,
+      // 文章评论接口
+      comment: `${BASE}/article/comment`,
+      // 获取文章评论列表接口
+      comments: `${BASE}/article/comments`,
+      // 文章点赞接口（切换点赞状态）
+      like: `${BASE}/article/like`
     },
     // 腾讯地图服务配置（请将 key 替换为你自己的密钥）
     tencent: {

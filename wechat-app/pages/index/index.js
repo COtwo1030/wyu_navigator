@@ -34,5 +34,21 @@ Page({
       fail: () => { wx.showToast({ title: '网络异常', icon: 'none' }) },
       complete: () => { this.setData({ loading: false }) }
     })
+  },
+  onCommentTap(e) {
+    const id = e.currentTarget.dataset.id
+    const item = (this.data.articles || []).find(a => a.id === id) || { id }
+    wx.navigateTo({
+      url: '/pages/article/detail',
+      success: (res) => { res.eventChannel.emit('article', item) }
+    })
+  },
+  onCardTap(e) {
+    const id = e.currentTarget.dataset.id
+    const item = (this.data.articles || []).find(a => a.id === id) || {}
+    wx.navigateTo({
+      url: '/pages/article/detail',
+      success: (res) => { res.eventChannel.emit('article', item) }
+    })
   }
 })

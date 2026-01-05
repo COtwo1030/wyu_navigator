@@ -1,0 +1,63 @@
+<navigation-bar extClass="nav-default" title="{{'详情'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view class="detail">
+  <view class="header">
+    <text class="username">{{article.username}}</text>
+    <text class="time">{{article.create_time}}</text>
+  </view>
+
+  <view wx:if="{{article.tag}}" class="tag">#{{article.tag}}</view>
+  <view class="content">{{article.content}}</view>
+
+  <view class="metrics">
+    <view class="metric">
+      <image class="metric-icon" src="/images/tabbar/look.png" mode="aspectFit"></image>
+      <text wx:if="{{article.view_count}}" class="metric-num">{{article.view_count}}</text>
+    </view>
+  </view>
+
+<view class="comment-title">评论区</view>
+<block wx:for="{{threads}}" wx:key="id">
+  <view class="comment-item">
+    <view class="c-header">
+      <text class="c-username">{{item.username}}</text>
+    </view>
+    <view class="c-content">{{item.content}}</view>
+    <view class="c-meta">
+      <text class="c-time">{{item.create_time}}</text>
+      <text class="c-reply" bindtap="onReplyCommentTap" data-index="{{index}}" data-id="{{item.id}}" data-username="{{item.username}}">回复</text>
+      <view class="c-action" bindtap="onLikeCommentTap" data-parent-index="{{index}}" data-id="{{item.id}}">
+        <image class="c-icon" src="/images/tabbar/like.png" mode="aspectFit"></image>
+        <text wx:if="{{item.like_count > 0}}" class="c-num">{{item.like_count}}</text>
+      </view>
+    </view>
+    <view class="c-toggle" wx:if="{{item.children.length}}" bindtap="onToggleRepliesTap" data-index="{{index}}">
+      {{item.showReplies ? '收起' : '展开'}}{{item.children.length}}条回复
+    </view>
+    <block wx:if="{{item.showReplies}}">
+      <view class="replies">
+        <block wx:for="{{item.children}}" wx:key="id" wx:for-item="child" wx:for-index="cidx">
+          <view class="reply-item">
+            <view class="r-header">
+              <text class="r-username">{{child.username}}</text>
+            </view>
+            <view class="r-content"><text wx:if="{{child.parent_id > 0 && child.reply_to}}">回复 {{child.reply_to}}：</text>{{child.content}}</view>
+            <view class="r-meta">
+              <text class="r-time">{{child.create_time}}</text>
+              <text class="r-reply" bindtap="onReplyCommentTap" data-parent-index="{{index}}" data-child-index="{{cidx}}" data-id="{{child.id}}" data-username="{{child.username}}">回复</text>
+              <view class="r-action" bindtap="onLikeCommentTap" data-parent-index="{{index}}" data-child-index="{{cidx}}" data-id="{{child.id}}">
+                <image class="c-icon" src="/images/tabbar/like.png" mode="aspectFit"></image>
+                <text wx:if="{{child.like_count > 0}}" class="c-num">{{child.like_count}}</text>
+              </view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </block>
+  </view>
+</block>
+</view>
+
+<view class="comment-bar">
+  <input class="comment-input" placeholder="{{commentPlaceholder}}" maxlength="200" value="{{commentText}}" bindinput="onCommentInput" bindconfirm="sendComment" focus="{{commentFocus}}" />
+  <image class="like-icon" src="/images/tabbar/like.png" mode="aspectFit" bindtap="onLikeTap"></image>
+</view>

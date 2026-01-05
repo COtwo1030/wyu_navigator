@@ -103,6 +103,19 @@ class UserCRUD:
             select(User.id).filter(User.email == email)
         )
         return user.scalar()
+    # 检查用户是否存在
+    async def check_exists(self, user_id: int) -> bool:
+        """
+        检查用户是否存在
+        参数:
+            user_id: 用户ID
+        返回:
+            bool
+        """
+        user = await self.session.execute(
+            select(User).filter(User.id == user_id)
+        )
+        return user.scalar() is not None
 
 class EmailCodeCRUD:
     def __init__(self, session: AsyncSession):
