@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
-from app.models.article import Article, ArticleLike, ArticleComment, ArticleCommentLike
-from app.schemas.article import ArticleData, ArticleLikeData, ArticleCommentData
+from app.models.article import Article, ArticleLike, ArticleComment, ArticleCommentLike, ArticleView
+from app.schemas.article import ArticleData, ArticleCommentData
 
 # 文章CRUD
 class ArticleCRUD:
@@ -57,39 +57,70 @@ class ArticleCRUD:
         # 优化：用get方法更高效
         article = await self.session.get(Article, article_id)
         return article is not None
+    
+    # 查询评论是否存在
+    async def check_comment_exists(self, comment_id: int) -> bool:
+        """
+        查询评论是否存在
+        参数:
+            comment_id: 评论ID
+        返回:
+            bool: 是否存在
+        """
+        comment = await self.session.get(ArticleComment, comment_id)
+        return comment is not None
 
     # 查询用户是否点赞了文章
-    async def check_like(self, data: ArticleLikeData) -> bool:
+    async def check_like(self, article_id: int, user_id: int) -> bool:
         """
         查询用户是否点赞了文章
         参数:
-            data: 文章点赞数据
+            article_id: 文章ID
+            user_id: 用户ID
         返回:
             bool: 是否点赞了文章
         """
         stmt = select(ArticleLike).where(
-            ArticleLike.article_id == data.article_id,
-            ArticleLike.user_id == data.user_id
+            ArticleLike.article_id == article_id,
+            ArticleLike.user_id == user_id
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first() is not None
+    
+    # 查询用户是否点赞了评论
+    async def check_comment_like(self, comment_id: int, user_id: int) -> bool:
+        """
+        查询用户是否点赞了评论
+        参数:
+            comment_id: 评论ID
+            user_id: 用户ID
+        返回:
+            bool: 是否点赞了评论
+        """
+        stmt = select(ArticleCommentLike).where(
+            ArticleCommentLike.comment_id == comment_id,
+            ArticleCommentLike.user_id == user_id
         )
         result = await self.session.execute(stmt)
         return result.scalars().first() is not None
 
     # 记录文章点赞记录（移除独立commit，交给上层控制事务）
-    async def record_like(self, data: ArticleLikeData) -> ArticleLike:
+    async def record_like(self, article_id: int, user_id: int) -> ArticleLike:
         """
         记录文章点赞记录
         参数:
-            data: 文章点赞数据
+            article_id: 文章ID
+            user_id: 用户ID
         返回:
             文章点赞模型
         """
-        like = ArticleLike(**data.model_dump())
+        like = ArticleLike(article_id=article_id, user_id=user_id)
         self.session.add(like)
-        # 移除独立commit，由点赞主逻辑统一提交，保证事务原子性
+        await self.session.commit()
         return like
     
     # 删除文章点赞记录（配合取消点赞）
-    async def delete_like_record(self, data: ArticleLikeData) -> bool:
+    async def delete_like_record(self, article_id: int, user_id: int) -> bool:
         """
         删除文章点赞记录
         参数:
@@ -99,17 +130,18 @@ class ArticleCRUD:
         """
         like_record = await self.session.scalar(
             select(ArticleLike).where(
-                ArticleLike.article_id == data.article_id,
-                ArticleLike.user_id == data.user_id
+                ArticleLike.article_id == article_id,
+                ArticleLike.user_id == user_id
             )
         )
         if like_record:
             await self.session.delete(like_record)
+            await self.session.commit()
             return True
         return False
 
     # 文章点赞数增加（移除独立commit，适配事务）
-    async def like(self, data: ArticleLikeData):
+    async def increment_like_count(self, article_id: int):
         """
         文章点赞数增加（仅更新，不单独commit，适配事务）
         参数:
@@ -117,14 +149,14 @@ class ArticleCRUD:
         返回:
             文章模型 | None
         """
-        article = await self.session.get(Article, data.article_id)
+        article = await self.session.get(Article, article_id)
         if article:
             article.like_count += 1
             self.session.add(article)
         return article
 
     # 文章点赞数减少（移除独立commit+防负数）
-    async def unlike(self, data: ArticleLikeData):
+    async def decrement_like_count(self, article_id: int):
         """
         文章点赞数减少（仅更新，不单独commit，适配事务）
         参数:
@@ -132,7 +164,7 @@ class ArticleCRUD:
         返回:
             文章模型 | None
         """
-        article = await self.session.get(Article, data.article_id)
+        article = await self.session.get(Article, article_id)
         if article:
             article.like_count = max(0, article.like_count - 1)  # 防止负数
             self.session.add(article)
@@ -196,3 +228,132 @@ class ArticleCRUD:
         if article:
             article.comment_count += 1
             self.session.add(article)
+    
+    # 增加评论点赞计数
+    async def increment_comment_like_count(self, comment_id: int):
+        """
+        增加评论点赞计数
+        参数:
+            comment_id: 评论ID
+        返回:
+            None
+        """
+        comment = await self.session.get(ArticleComment, comment_id)
+        if comment:
+            comment.like_count += 1
+            self.session.add(comment)
+    
+    # 减少评论点赞计数
+    async def decrement_comment_like_count(self, comment_id: int):
+        """
+        减少评论点赞计数
+        参数:
+            comment_id: 评论ID
+        返回:
+            None
+        """
+        comment = await self.session.get(ArticleComment, comment_id)
+        if comment:
+            comment.like_count = max(0, comment.like_count - 1)  # 防止负数
+            self.session.add(comment)
+
+    # 记录评论点赞
+    async def record_comment_like(self, comment_id: int, user_id: int):
+        """
+        记录评论点赞
+        参数:
+            comment_id: 评论ID
+            user_id: 用户ID
+        返回:
+            None
+        """
+        like_record = ArticleCommentLike(comment_id=comment_id, user_id=user_id)
+        self.session.add(like_record)
+        await self.session.commit()
+    
+    # 删除评论点赞记录
+    async def delete_comment_like_record(self, comment_id: int, user_id: int):
+        """
+        删除评论点赞记录
+        参数:
+            comment_id: 评论ID
+            user_id: 用户ID
+        返回:
+            None
+        """
+        like_record = await self.session.scalar(
+            select(ArticleCommentLike).where(
+                ArticleCommentLike.comment_id == comment_id,
+                ArticleCommentLike.user_id == user_id
+            )
+        )
+        if like_record:
+            await self.session.delete(like_record)
+            await self.session.commit()
+    
+    # 查询用户点赞的文章id列表
+    async def get_liked_articles(self, user_id: int) -> list[int]:
+        """
+        查询用户点赞的文章id列表
+        参数:
+            user_id: 用户ID
+        返回:
+            list[int]: 文章id列表（Article.id）
+        """
+        stmt = select(ArticleLike.article_id).where(ArticleLike.user_id == user_id)
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all()]
+    
+    # 查询用户点赞的评论
+    async def get_liked_comments(self, user_id: int) -> list[int]:
+        """
+        查询用户点赞的评论id列表
+        参数:
+            user_id: 用户ID
+        返回:
+            list[int]: 评论id列表（Comment.id）
+        """
+        stmt = select(ArticleCommentLike.comment_id).where(ArticleCommentLike.user_id == user_id)
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all()]
+    
+    # 查询用户评论过的文章id列表
+    async def get_commented_articles(self, user_id: int) -> list[int]:
+        """
+        查询用户评论过的文章id列表
+        参数:
+            user_id: 用户ID
+        返回:
+            list[int]: 文章id列表（Article.id）
+        """
+        stmt = select(ArticleComment.article_id).where(ArticleComment.user_id == user_id)
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all()]
+    
+    # 增加文章浏览量
+    async def increment_view_count(self, article_id: int):
+        """
+        增加文章浏览量
+        参数:
+            article_id: 文章ID
+        返回:
+            None
+        """
+        article = await self.session.get(Article, article_id)
+        if article:
+            article.view_count += 1
+            self.session.add(article)
+    
+    # 记录文章浏览
+    async def record_view(self, article_id: int, user_id: int):
+        """
+        记录文章浏览
+        参数:
+            article_id: 文章ID
+            user_id: 用户ID
+        返回:
+            None
+        """
+        view_record = ArticleView(article_id=article_id, user_id=user_id)
+        self.session.add(view_record)
+        await self.session.commit()

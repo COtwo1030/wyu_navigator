@@ -89,8 +89,6 @@ class ArticleView(Base):
     user_id: Mapped[int] = mapped_column(nullable=False, comment="浏览用户ID（匿名用户可填0）")
     article_id: Mapped[int] = mapped_column(nullable=False, comment="被浏览的文章ID")
     view_time: Mapped[datetime] = mapped_column(default=func.now(), comment="浏览时间")
-    # 记录浏览时长（比如用户看了多久）
-    view_duration: Mapped[int] = mapped_column(default=0, comment="浏览时长（秒），默认0")
 
     # 索引设计
     __table_args__ = (

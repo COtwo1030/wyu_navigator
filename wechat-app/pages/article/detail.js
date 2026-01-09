@@ -7,14 +7,65 @@ Page({
     const ec = this.getOpenerEventChannel && this.getOpenerEventChannel()
     if (ec && ec.on) {
       ec.on('article', (item) => {
-        this.setData({ article: item, commentFocus: true, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [] })
+        this.setData({ article: item, liked: !!item.liked, commentFocus: true, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [] })
+        this.increaseView(item.id)
+        const token = wx.getStorageSync('token') || ''
+        if (token) {
+          wx.request({
+            url: `${config.api.article.likedList}`,
+            method: 'GET',
+            header: { Authorization: `Bearer ${token}` },
+            success: (r) => {
+              const ids = Array.isArray(r.data) ? r.data : []
+              const liked = ids.includes(item.id)
+              const a = this.data.article
+              this.setData({ article: { ...a, liked }, liked })
+            }
+          })
+        }
         this.fetchComments(item.id)
       })
     } else if (options && options.id) {
       const id = Number(options.id)
-      this.setData({ article: { id }, commentFocus: true, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [] })
+      this.setData({ article: { id }, liked: false, commentFocus: true, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [] })
+      this.increaseView(id)
+      const token = wx.getStorageSync('token') || ''
+      if (token) {
+        wx.request({
+          url: `${config.api.article.likedList}`,
+          method: 'GET',
+          header: { Authorization: `Bearer ${token}` },
+          success: (r) => {
+            const ids = Array.isArray(r.data) ? r.data : []
+            const liked = ids.includes(id)
+            const a = this.data.article
+            this.setData({ article: { ...a, liked }, liked })
+          }
+        })
+      }
       this.fetchComments(id)
     }
+  },
+
+  increaseView(id) {
+    const uid = wx.getStorageSync('user_id')
+    const header = { 'content-type': 'application/json' }
+    if (uid !== undefined && uid !== null) {
+      const num = Number(uid)
+      header['user_id'] = String(isNaN(num) ? 0 : num)
+    }
+    wx.request({
+      url: `${config.api.article.view}`,
+      method: 'POST',
+      header,
+      data: { article_id: id },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          const a = this.data.article || { id }
+          this.setData({ article: { ...a, view_count: (a.view_count || 0) + 1 } })
+        }
+      }
+    })
   },
 
   fetchComments(articleId) {
@@ -69,6 +120,29 @@ Page({
         const threads = top.map(c => ({ ...c, children: rootChildrenMap[c.id] || [], showReplies: false }))
         const hasMore = incoming.length === 5
         this.setData({ comments: merged, threads, commentHasMore: hasMore })
+        const token = wx.getStorageSync('token') || ''
+        if (token) {
+          wx.request({
+            url: `${config.api.article.commentLikedList}`,
+            method: 'GET',
+            header: { Authorization: `Bearer ${token}` },
+            success: (r) => {
+              const ids = Array.isArray(r.data) ? r.data : []
+              const set = {}
+              for (let i = 0; i < ids.length; i++) set[ids[i]] = 1
+              const tds = (this.data.threads || []).slice()
+              for (let i = 0; i < tds.length; i++) {
+                const t = tds[i]
+                t.liked = !!set[t.id]
+                const children = t.children || []
+                for (let j = 0; j < children.length; j++) {
+                  children[j].liked = !!set[children[j].id]
+                }
+              }
+              this.setData({ threads: tds, likedComments: set })
+            }
+          })
+        }
         if (hasMore && added > 0) {
           this.setData({ commentPage: this.data.commentPage + 1 })
           this.fetchComments(articleId)
@@ -80,21 +154,45 @@ Page({
   onCommentInput(e) { this.setData({ commentText: e.detail.value }) },
 
   onLikeCommentTap(e) {
+    const token = wx.getStorageSync('token') || ''
+    if (!token) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      wx.navigateTo({ url: '/pages/login/login' })
+      return
+    }
     const pid = e.currentTarget.dataset.parentIndex
     const cid = e.currentTarget.dataset.childIndex
     const id = e.currentTarget.dataset.id
-    const liked = !!this.data.likedComments[id]
-    const threads = (this.data.threads || []).slice()
-    if (typeof cid === 'number') {
-      const c = threads[pid].children[cid] || {}
-      const next = Math.max(0, (c.like_count || 0) + (liked ? -1 : 1))
-      threads[pid].children[cid] = { ...c, like_count: next }
-    } else {
-      const c = threads[pid] || {}
-      const next = Math.max(0, (c.like_count || 0) + (liked ? -1 : 1))
-      threads[pid] = { ...c, like_count: next }
-    }
-    this.setData({ threads, likedComments: { ...this.data.likedComments, [id]: !liked } })
+    wx.request({
+      url: `${config.api.article.commentLike}`,
+      method: 'POST',
+      header: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
+      data: { comment_id: id },
+      success: (res) => {
+        if (res.statusCode === 401) {
+          wx.showToast({ title: '请先登录', icon: 'none' })
+          wx.navigateTo({ url: '/pages/login/login' })
+          return
+        }
+        if (res.statusCode !== 200) {
+          wx.showToast({ title: '操作失败', icon: 'none' })
+          return
+        }
+        const liked = !!(res.data && res.data.liked)
+        const threads = (this.data.threads || []).slice()
+        if (typeof cid === 'number') {
+          const c = threads[pid].children[cid] || {}
+          const next = liked ? (c.like_count || 0) + 1 : Math.max(0, (c.like_count || 0) - 1)
+          threads[pid].children[cid] = { ...c, like_count: next }
+        } else {
+          const c = threads[pid] || {}
+          const next = liked ? (c.like_count || 0) + 1 : Math.max(0, (c.like_count || 0) - 1)
+          threads[pid] = { ...c, like_count: next }
+        }
+        this.setData({ threads, likedComments: { ...this.data.likedComments, [id]: liked } })
+      },
+      fail: () => { wx.showToast({ title: '网络异常', icon: 'none' }) }
+    })
   },
 
   onReplyCommentTap(e) {
@@ -125,6 +223,11 @@ Page({
       header: { 'content-type': 'application/json', Authorization: `Bearer ${token}` },
       data: { article_id: id },
       success: (res) => {
+        if (res.statusCode === 401) {
+          wx.showToast({ title: '请先登录', icon: 'none' })
+          wx.navigateTo({ url: '/pages/login/login' })
+          return
+        }
         if (res.statusCode !== 200) {
           wx.showToast({ title: '点赞失败', icon: 'none' })
           return
@@ -132,7 +235,7 @@ Page({
         const liked = !!(res.data && res.data.liked)
         const a = this.data.article
         const like_count = liked ? (a.like_count || 0) + 1 : Math.max(0, (a.like_count || 0) - 1)
-        this.setData({ article: { ...a, like_count }, liked })
+        this.setData({ article: { ...a, like_count, liked }, liked })
       },
       fail: () => { wx.showToast({ title: '网络异常', icon: 'none' }) }
     })

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.article import ArticleData, ArticleCommentData
@@ -41,3 +41,61 @@ async def get_article_comments(
     session: AsyncSession = Depends(get_session),
 ):
     return await ArticleService(session).get_comments(article_id, page)
+
+# 文章点赞/取消点赞
+@router.post("/like", status_code=200,description="文章点赞/取消点赞")
+async def like_article(
+    article_id: int = Body(..., embed=True),
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).like(article_id, user_id)
+
+# 文章评论点赞/取消点赞
+@router.post("/comment/like", status_code=200,description="评论点赞/取消点赞")
+async def like_comment(
+    comment_id: int = Body(..., embed=True),
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).like_comment(comment_id, user_id)
+
+# 查询用户点赞的文章id列表
+@router.get("/likelist", status_code=200,description="查询用户点赞的文章id列表")
+async def get_liked_articles(
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).get_liked_articles(user_id)
+
+# 查询用户点赞的评论id列表
+@router.get("/comment/likelist", status_code=200,description="查询用户点赞的评论id列表")
+async def get_liked_comments(
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).get_liked_comments(user_id)
+
+# 查询用户评论过的文章id列表
+@router.get("/comment/articlelist", status_code=200,description="查询用户评论过的文章id列表")
+async def get_commented_articles(
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).get_commented_articles(user_id)
+
+# 浏览量增加
+@router.post("/view", status_code=200,description="浏览量增加")
+async def increase_view_count(
+    article_id: int = Body(..., embed=True),
+    session: AsyncSession = Depends(get_session),
+    authorization: str | None = Header(default=None),
+):
+    if authorization and authorization.lower().startswith("bearer "):
+        try:
+            user_id = await get_current_user_id(authorization)
+        except:
+            user_id = 0
+    else:
+        user_id = 0
+    return await ArticleService(session).increase_view_count(article_id, user_id)

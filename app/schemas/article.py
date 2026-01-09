@@ -9,11 +9,6 @@ class ArticleData(BaseModel):
     content: Annotated[str, Field(min_length=1, max_length=500, description="文章内容")]
     img: Annotated[Optional[str], Field(description="文章图片")] = None
 
-# 文章点赞请求体
-class ArticleLikeData(BaseModel):
-    article_id: Annotated[int, Field(description="文章ID")]
-    user_id: Annotated[int, Field(description="用户ID")]
-
 # 文章评论请求体
 class ArticleCommentData(BaseModel):
     """

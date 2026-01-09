@@ -17,6 +17,14 @@ MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME")
 MAIL_STARTTLS = os.getenv("MAIL_STARTTLS", "True").lower() == "true"
 MAIL_SSL_TLS = os.getenv("MAIL_SSL_TLS", "False").lower() == "true"
 
+# JWT 配置
 JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+
+# S3 配置
+S3_ENDPOINT = os.getenv("S3_ENDPOINT")
+S3_REGION = os.getenv("S3_REGION", "cn-east-1")
+S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID")
+S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY")
+S3_BUCKET = os.getenv("S3_BUCKET")

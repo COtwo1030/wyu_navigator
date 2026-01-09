@@ -11,8 +11,8 @@
  * - map.routeIcons/routeIconSize：路线起点/终点高亮图标与尺寸
  * - map.behavior.fitAllPointsOnLoad：是否在进入页面时自动缩放以包含全部点位
  */
-//const BASE = 'http://127.0.0.1:8000'
-const BASE = 'http://10.40.130.240:8000'
+const BASE = 'http://127.0.0.1:8000'
+//const BASE = 'http://10.107.233.240:8000'
 const config = {
   // 后端接口配置
   api: {
@@ -37,12 +37,18 @@ const config = {
       create: `${BASE}/article/create`,
       // 分页获取文章接口
       page: `${BASE}/article/page`,
+      // 浏览量增加接口
+      view: `${BASE}/article/view`,
       // 文章评论接口
       comment: `${BASE}/article/comment`,
       // 获取文章评论列表接口
       comments: `${BASE}/article/comments`,
       // 文章点赞接口（切换点赞状态）
-      like: `${BASE}/article/like`
+      like: `${BASE}/article/like`,
+      commentLike: `${BASE}/article/comment/like`,
+      commentedArticleList: `${BASE}/article/comment/articlelist`,
+      likedList: `${BASE}/article/likelist`,
+      commentLikedList: `${BASE}/article/comment/likelist`
     },
     // 腾讯地图服务配置（请将 key 替换为你自己的密钥）
     tencent: {

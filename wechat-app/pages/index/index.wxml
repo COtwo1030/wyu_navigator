@@ -1,7 +1,19 @@
-<navigation-bar back="{{false}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<navigation-bar back="{{false}}" color="black" background="#FFF" animated="{{false}}" extClass="nav-index">
+  <view slot="left" class="nav-left">
+    <image class="nav-left-logo" src="/images/tabbar/wyu_logo.png" mode="heightFix"></image>
+  </view>
+</navigation-bar>
 <view class="index">
+  <view class="category-bar">
+    <block wx:for="{{categories}}" wx:key="*this">
+      <view class="category-item {{activeCategoryIndex===index?'active':''}}" data-idx="{{index}}" bindtap="onCategoryTap">
+        <text class="category-text">{{item}}</text>
+        <view class="category-underline" wx:if="{{activeCategoryIndex===index}}"></view>
+      </view>
+    </block>
+  </view>
   <scroll-view scroll-y class="list" lower-threshold="80" bindscrolltolower="onScrollToLower">
-    <block wx:for="{{articles}}" wx:key="id">
+    <block wx:for="{{displayArticles}}" wx:key="id">
       <view class="card" bindtap="onCardTap" data-id="{{item.id}}">
         <view class="header">
           <text class="username">{{item.username}}</text>
@@ -15,12 +27,12 @@
             <text wx:if="{{item.view_count}}" class="metric-num">{{item.view_count}}</text>
           </view>
           <view class="metrics-right">
-            <view class="metric">
-              <image class="metric-icon" src="/images/tabbar/like.png" mode="aspectFit"></image>
+            <view class="metric" catchtap="onLikeArticleTap" data-id="{{item.id}}">
+              <image class="metric-icon" src="{{item.liked ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit"></image>
               <text wx:if="{{item.like_count}}" class="metric-num">{{item.like_count}}</text>
             </view>
-            <view class="metric" bindtap="onCommentTap" data-id="{{item.id}}">
-              <image class="metric-icon" src="/images/tabbar/comment.png" mode="aspectFit"></image>
+            <view class="metric" catchtap="onCommentTap" data-id="{{item.id}}">
+              <image class="metric-icon" src="{{item.commented ? '/images/tabbar/commented.png' : '/images/tabbar/comment.png'}}" mode="aspectFit"></image>
               <text wx:if="{{item.comment_count}}" class="metric-num">{{item.comment_count}}</text>
             </view>
           </view>
@@ -29,7 +41,7 @@
     </block>
     <view class="footer">
       <view wx:if="{{loading}}" class="loading">加载中...</view>
-      <view wx:if="{{!hasMore && articles.length}}" class="nomore">没有更多了</view>
+      <view wx:if="{{!hasMore && displayArticles.length}}" class="nomore">没有更多了</view>
     </view>
   </scroll-view>
 </view>

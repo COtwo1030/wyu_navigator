@@ -104,6 +104,122 @@ class ArticleService:
                 "parent_id": c.parent_id,
                 "content": c.content,
                 "create_time": c.create_time.strftime("%Y-%m-%d %H:%M"),
+                "like_count": c.like_count,
             }
             for c in comments
         ]
+    
+    # 文章点赞/取消点赞
+    async def like(self, article_id: int, user_id: int) -> dict:
+        """
+        文章点赞/取消点赞
+        参数:
+            article_id: 文章ID
+            user_id: 从 token 解析出的用户ID
+        返回:
+            dict: {"liked": bool}
+        """
+        # 判断文章是否存在
+        if not await ArticleCRUD(self.session).check_exists(article_id):
+            raise ValueError("文章不存在")
+        # 判断用户是否存在
+        if not await UserCRUD(self.session).check_exists(user_id):
+            raise ValueError("用户不存在")
+        # 检查是否已点赞
+        if await ArticleCRUD(self.session).check_like(article_id, user_id):
+            await ArticleCRUD(self.session).decrement_like_count(article_id)
+            await ArticleCRUD(self.session).delete_like_record(article_id, user_id)
+            logger.info(f"用户 {user_id} 取消点赞文章 {article_id}")
+            return {"liked": False}
+        else:
+            await ArticleCRUD(self.session).increment_like_count(article_id)
+            await ArticleCRUD(self.session).record_like(article_id, user_id)
+            logger.info(f"用户 {user_id} 点赞文章 {article_id}")
+            return {"liked": True}
+    
+    # 文章评论点赞/取消点赞
+    async def like_comment(self, comment_id: int, user_id: int) -> dict:
+        """
+        文章评论点赞/取消点赞
+        参数:
+            comment_id: 评论ID
+            user_id: 从 token 解析出的用户ID
+        返回:
+            dict: {"liked": bool}
+        """
+        # 判断评论是否存在
+        if not await ArticleCRUD(self.session).check_comment_exists(comment_id):
+            raise ValueError("评论不存在")
+        # 判断用户是否存在
+        if not await UserCRUD(self.session).check_exists(user_id):
+            raise ValueError("用户不存在")
+        # 检查是否已点赞
+        if await ArticleCRUD(self.session).check_comment_like(comment_id, user_id):
+            await ArticleCRUD(self.session).decrement_comment_like_count(comment_id)
+            await ArticleCRUD(self.session).delete_comment_like_record(comment_id, user_id)
+            logger.info(f"用户 {user_id} 取消点赞评论 {comment_id}")
+            return {"liked": False}
+        else:
+            await ArticleCRUD(self.session).increment_comment_like_count(comment_id)
+            await ArticleCRUD(self.session).record_comment_like(comment_id, user_id)
+            logger.info(f"用户 {user_id} 点赞评论 {comment_id}")
+            return {"liked": True}
+
+    # 查询用户点赞的文章id列表
+    async def get_liked_articles(self, user_id: int) -> list[int]:
+        """
+        查询用户点赞的文章id列表
+        参数:
+            user_id: 用户ID
+        返回:
+            list[int]: 文章id列表
+        """
+        articles = await ArticleCRUD(self.session).get_liked_articles(user_id)
+        return articles
+
+    # 查询用户点赞的评论
+    async def get_liked_comments(self, user_id: int) -> list[ArticleComment]:
+        """
+        查询用户点赞的评论id列表
+        参数:
+            user_id: 用户ID
+        返回:
+            list[ArticleComment]: 评论列表
+        """
+        comments = await ArticleCRUD(self.session).get_liked_comments(user_id)
+        return comments
+
+    # 查询用户评论过的文章id列表
+    async def get_commented_articles(self, user_id: int) -> list[int]:
+        """
+        查询用户评论过的文章id列表
+        参数:
+            user_id: 用户ID
+        返回:
+            list[int]: 文章id列表
+        """
+        articles = await ArticleCRUD(self.session).get_commented_articles(user_id)
+        return articles
+
+    # 浏览量增加
+    async def increase_view_count(self, article_id: int, user_id: int) -> dict:
+        """
+        浏览量增加
+        参数:
+            article_id: 文章ID
+            user_id: 用户ID
+        返回:
+            dict: {"view_count": int}
+        """
+        # 判断文章是否存在
+        if not await ArticleCRUD(self.session).check_exists(article_id):
+            raise ValueError("文章不存在")
+        # 判断用户是否存在（匿名用户用0表示，跳过校验）
+        if user_id != 0:
+            if not await UserCRUD(self.session).check_exists(user_id):
+                raise ValueError("用户不存在")
+        # 增加浏览量
+        await ArticleCRUD(self.session).increment_view_count(article_id)
+        # 记录浏览记录
+        await ArticleCRUD(self.session).record_view(article_id, user_id)
+        logger.info(f"用户 {user_id} 浏览文章 {article_id}")
