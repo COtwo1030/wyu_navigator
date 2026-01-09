@@ -3,7 +3,7 @@ import boto3
 import app.settings as settings
 from botocore.exceptions import ClientError
 
-router = APIRouter(prefix="/storage", tags=["storage"])
+router = APIRouter(prefix="/storage", tags=["存储"])
 
 # 创建S3客户端（核心配置保留）
 def _s3_client():

@@ -14,7 +14,13 @@ page { background: #fff; }
 .category-underline { width: 24px; height: 3px; background: #4CAF50; border-radius: 2px; margin-top: 4px; }
 .list { height: calc(100vh - 48px - 44px); padding: 12px; box-sizing: border-box; }
 .card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: #eee; }
+.header-right { display: flex; flex-direction: column; flex: 1; }
+.top-row { display: flex; justify-content: space-between; align-items: center; }
+.meta { margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+.gender-icon { width: 16px; height: 16px; }
+.year-badge { height: 20px; line-height: 20px; padding: 0 8px; background: #e5e5e5; color: #333; border-radius: 10px; font-size: 12px; }
 .username { font-weight: 600; color: #333; }
 .time { font-size: 12px; color: #999; }
 .tag { display: inline-block; margin-bottom: 6px; padding: 2px 6px; border-radius: 12px; background: #f0f9eb; color: #67C23A; font-size: 12px; }

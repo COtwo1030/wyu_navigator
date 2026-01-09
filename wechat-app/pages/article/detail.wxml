@@ -1,8 +1,17 @@
 <navigation-bar extClass="nav-default" title="{{'详情'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
 <view class="detail">
   <view class="header">
-    <text class="username">{{article.username}}</text>
-    <text class="time">{{article.create_time}}</text>
+    <image class="avatar" src="{{article.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
+    <view class="header-right">
+      <view class="top-row">
+        <text class="username">{{article.username}}</text>
+        <text class="time">{{article.create_time}}</text>
+      </view>
+      <view class="meta" wx:if="{{article.genderIcon || article.yearText}}">
+        <image wx:if="{{article.genderIcon}}" class="gender-icon" src="/images/tabbar/{{article.genderIcon}}" mode="aspectFit"></image>
+        <view wx:if="{{article.yearText}}" class="year-badge">{{article.yearText}}</view>
+      </view>
+    </view>
   </view>
 
   <view wx:if="{{article.tag}}" class="tag">#{{article.tag}}</view>
@@ -19,6 +28,7 @@
 <block wx:for="{{threads}}" wx:key="id">
   <view class="comment-item">
     <view class="c-header">
+      <image class="c-avatar" src="{{item.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
       <text class="c-username">{{item.username}}</text>
     </view>
     <view class="c-content">{{item.content}}</view>
@@ -38,6 +48,7 @@
         <block wx:for="{{item.children}}" wx:key="id" wx:for-item="child" wx:for-index="cidx">
           <view class="reply-item">
             <view class="r-header">
+              <image class="r-avatar" src="{{child.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
               <text class="r-username">{{child.username}}</text>
             </view>
             <view class="r-content"><text wx:if="{{child.parent_id > 0 && child.reply_to}}">回复 {{child.reply_to}}：</text>{{child.content}}</view>

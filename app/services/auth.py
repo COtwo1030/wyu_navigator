@@ -1,4 +1,5 @@
 import random
+from random import randint
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -9,10 +10,11 @@ from aiosmtplib.errors import SMTPException
 
 from app.dependencies import get_hash_password, verify_password, create_access_token
 from app.schemas.auth import RegisterData, PswLoginData, CodeLoginData, ResetPasswordData
-from app.crud.auth import UserCRUD, EmailCodeCRUD
+from app.crud.auth import AuthCRUD, EmailCodeCRUD
+from app.crud.user import UserCRUD
 import app.settings as settings
 
-class UserService:
+class AuthService:
     def __init__(self, session: AsyncSession):
         self.session = session
     
@@ -34,8 +36,8 @@ class UserService:
             logger.warning(f"登录失败: 验证码过期 - {data.email}")
             raise HTTPException(status_code=400, detail="验证码过期")
         # 获取用户名
-        username = await UserCRUD(self.session).search_username(email=data.email)
-        user_id = await UserCRUD(self.session).search_user_id_by_email(email=data.email)
+        username = await AuthCRUD(self.session).search_username(email=data.email)
+        user_id = await AuthCRUD(self.session).search_user_id_by_email(email=data.email)
         logger.success(f"用户登录成功: email={data.email}")
         token = create_access_token(user_id)
         return {"access_token": token, "token_type": "bearer", "message": "登录成功", "username": username}
@@ -50,7 +52,7 @@ class UserService:
             dict: 包含access_token和token_type的字典，以及用户名
         """
         # 根据邮箱获取数据库中的密码
-        db_hashed_password = await UserCRUD(self.session).search_user_hashed_password(email=data.email)
+        db_hashed_password = await AuthCRUD(self.session).search_user_hashed_password(email=data.email)
         if db_hashed_password is None:
             logger.warning(f"登录失败: 邮箱不存在 - {data.email}")
             raise HTTPException(status_code=400, detail="邮箱不存在")
@@ -60,8 +62,8 @@ class UserService:
             logger.warning(f"登录失败: 密码错误 - {data.email}")
             raise HTTPException(status_code=400, detail="密码错误")
         # 获取用户名
-        username = await UserCRUD(self.session).search_username(email=data.email)
-        user_id = await UserCRUD(self.session).search_user_id_by_email(email=data.email)
+        username = await AuthCRUD(self.session).search_username(email=data.email)
+        user_id = await AuthCRUD(self.session).search_user_id_by_email(email=data.email)
         logger.success(f"用户登录成功: email={data.email}")
         token = create_access_token(user_id)
         return {"access_token": token, "token_type": "bearer", "message": "登录成功", "username": username}
@@ -86,12 +88,21 @@ class UserService:
             logger.warning(f"注册失败: 验证码过期 - {data.email}")
             raise HTTPException(status_code=400, detail="验证码过期")
         # 邮箱是否已注册
-        if await UserCRUD(self.session).is_email_registered(email=data.email):
+        if await AuthCRUD(self.session).is_email_registered(email=data.email):
             logger.warning(f"注册失败: 邮箱已存在 - {data.email}")
             raise HTTPException(status_code=400, detail="邮箱已注册")
         # 创建用户
         data.password = await get_hash_password(data.password) # 对密码进行哈希处理
-        new_user = await UserCRUD(self.session).create_user(data)
+        new_user = await AuthCRUD(self.session).create_user(data)
+
+        # 初始化用户详情
+        user_detail = {
+            "user_id": new_user.id,
+            "username": data.username,
+            "avatar": settings.DEFAULT_AVATAR[randint(0, len(settings.DEFAULT_AVATAR) - 1)], # 随机选择一个默认头像
+            "create_time": datetime.now(),
+        }
+        await UserCRUD(self.session).init_user_detail(user_detail)
         
         logger.success(f"用户注册成功: email={data.email}, id={new_user.id}")
         return {"message": "注册成功"}
@@ -105,7 +116,7 @@ class UserService:
             dict: {"message": "密码重置成功"}
         """
         # 查询邮箱是否存在
-        if not await UserCRUD(self.session).is_email_registered(email=data.email):
+        if not await AuthCRUD(self.session).is_email_registered(email=data.email):
             logger.warning(f"重置密码失败: 邮箱不存在 - {data.email}")
             raise HTTPException(status_code=400, detail="邮箱不存在")
         # 查询验证码是否存在
@@ -119,7 +130,7 @@ class UserService:
             raise HTTPException(status_code=400, detail="验证码过期")
         # 更新密码
         hashed_password = await get_hash_password(data.password)
-        await UserCRUD(self.session).reset_user_password(email=data.email, hashed_password=hashed_password)
+        await AuthCRUD(self.session).reset_user_password(email=data.email, hashed_password=hashed_password)
         logger.success(f"用户密码重置成功: email={data.email}")
         return {"message": "密码重置成功"}
 

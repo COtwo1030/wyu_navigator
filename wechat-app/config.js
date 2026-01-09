@@ -50,6 +50,11 @@ const config = {
       likedList: `${BASE}/article/likelist`,
       commentLikedList: `${BASE}/article/comment/likelist`
     },
+     // 用户接口
+    user: {
+      info: `${BASE}/user/info`,
+      detail: `${BASE}/user/detail`
+    },
     // 腾讯地图服务配置（请将 key 替换为你自己的密钥）
     tencent: {
       key: 'SWABZ-BCY64-WIHUL-KCDGA-OMFUV-JWFS5',

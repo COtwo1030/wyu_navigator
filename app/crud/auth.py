@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from app.schemas.auth import RegisterData
 from app.models.auth import User, EmailCode
 
-class UserCRUD:
+class AuthCRUD:
     def __init__(self, session: AsyncSession):
         self.session = session
     
@@ -29,7 +29,7 @@ class UserCRUD:
         参数:
             data: RegisterData
         返回:
-            User: 创建的用户
+            User: 创建的用户, 包含用户ID
         """
         user = User(
             username=data.username,
@@ -39,6 +39,7 @@ class UserCRUD:
         )
         self.session.add(user)
         await self.session.commit()
+        await self.session.refresh(user)
         return user
     async def reset_user_password(self, email: str, hashed_password: str):
         """

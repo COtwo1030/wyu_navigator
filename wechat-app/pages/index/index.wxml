@@ -16,8 +16,17 @@
     <block wx:for="{{displayArticles}}" wx:key="id">
       <view class="card" bindtap="onCardTap" data-id="{{item.id}}">
         <view class="header">
-          <text class="username">{{item.username}}</text>
-          <text class="time">{{item.create_time}}</text>
+          <image class="avatar" src="{{item.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
+          <view class="header-right">
+            <view class="top-row">
+              <text class="username">{{item.username}}</text>
+              <text class="time">{{item.create_time}}</text>
+            </view>
+            <view class="meta" wx:if="{{item.genderIcon || item.yearText}}">
+              <image wx:if="{{item.genderIcon}}" class="gender-icon" src="/images/tabbar/{{item.genderIcon}}" mode="aspectFit"></image>
+              <view wx:if="{{item.yearText}}" class="year-badge">{{item.yearText}}</view>
+            </view>
+          </view>
         </view>
         <view wx:if="{{item.tag}}" class="tag">#{{item.tag}}</view>
         <view class="content">{{item.content}}</view>

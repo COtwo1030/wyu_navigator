@@ -50,9 +50,19 @@ Page({
       timeout: 10000,
       success: (res) => {
         const pageSize = this.data.pageSize
-        const list = Array.isArray(res.data) ? res.data : (res.data.items || [])
-        const hasMore = list.length === pageSize
-        const merged = page === 1 ? list : this.data.articles.concat(list)
+        const raw = Array.isArray(res.data) ? res.data : (res.data.items || [])
+        const enhanced = raw.map(a => {
+          const gender = a.gender || ''
+          const year = a.year || ''
+          return {
+            ...a,
+            avatar: a.avatar || '/images/tabbar/avator.png',
+            genderIcon: gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''),
+            yearText: year ? `${year}级` : ''
+          }
+        })
+        const hasMore = enhanced.length === pageSize
+        const merged = page === 1 ? enhanced : this.data.articles.concat(enhanced)
         const token = wx.getStorageSync('token') || ''
         const isLoggedIn = !!token
         if (isLoggedIn) {

@@ -7,7 +7,12 @@ Page({
     const ec = this.getOpenerEventChannel && this.getOpenerEventChannel()
     if (ec && ec.on) {
       ec.on('article', (item) => {
-        this.setData({ article: item, liked: !!item.liked, commentFocus: true, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [] })
+        const gender = item.gender || ''
+        const year = item.year || ''
+        const genderIcon = item.genderIcon || (gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''))
+        const yearText = item.yearText || (year ? `${year}级` : '')
+        const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText }
+        this.setData({ article: enhanced, liked: !!enhanced.liked, commentFocus: true, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [] })
         this.increaseView(item.id)
         const token = wx.getStorageSync('token') || ''
         if (token) {

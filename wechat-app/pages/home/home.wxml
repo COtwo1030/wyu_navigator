@@ -1,8 +1,36 @@
 <navigation-bar title="{{'首页'}}" back="{{false}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
 <view class="home">
 
-  <view class="content"></view>
-  <view class="bottom-bar">
-    <button class="btn primary" bindtap="navToLogin">登录</button>
+  <view class="content">
+    <view class="profile">
+      <image class="avatar" src="{{avatarSrc}}" mode="aspectFill"></image>
+      <view class="info">
+        <view class="username-row">
+          <view class="username" bindtap="onEditProfile">{{username}}</view>
+          <text class="login-tip" wx:if="{{!loggedIn}}" bindtap="navToLogin">登录</text>
+          <button class="logout-btn" wx:if="{{loggedIn}}" bindtap="onLogout">退出登录</button>
+        </view>
+        <view class="meta" wx:if="{{loggedIn && (genderIcon || yearText)}}">
+          <image wx:if="{{genderIcon}}" class="gender-icon" src="/images/tabbar/{{genderIcon}}" mode="aspectFit"></image>
+          <view wx:if="{{yearText}}" class="year-badge">{{yearText}}</view>
+        </view>
+        <view class="edit-form" wx:if="{{showForm}}">
+          <view class="form-row">
+            <text class="label">性别</text>
+            <picker mode="selector" range="{{genderOptions}}" bindchange="onGenderChange">
+              <view class="picker">{{formGender || '请选择'}}</view>
+            </picker>
+          </view>
+          <view class="form-row">
+            <text class="label">入学年份</text>
+            <input class="input" type="number" value="{{formYear}}" bindinput="onYearInput" placeholder="如 2022"/>
+          </view>
+          <view class="form-actions">
+            <button class="save-btn" bindtap="onSubmitDetail">保存</button>
+            <button class="cancel-btn" bindtap="onCancelEdit">取消</button>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </view>

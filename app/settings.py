@@ -28,3 +28,9 @@ S3_REGION = os.getenv("S3_REGION", "cn-east-1")
 S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID")
 S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY")
 S3_BUCKET = os.getenv("S3_BUCKET")
+
+# 默认头像URL
+DEFAULT_AVATAR = [
+    "https://wuyu.s3.bitiful.net/Wilson_Build.webp",
+    "https://wuyu.s3.bitiful.net/Wendy_Build.webp",
+]

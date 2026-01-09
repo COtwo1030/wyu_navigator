@@ -3,7 +3,8 @@ from sqlalchemy import select
 from loguru import logger
 
 from app.crud.article import ArticleCRUD
-from app.crud.auth import UserCRUD
+from app.crud.auth import AuthCRUD
+from app.crud.user import UserCRUD
 from app.schemas.article import ArticleData, ArticleCommentData
 from app.models.auth import User
 from app.models.article import ArticleComment
@@ -37,14 +38,19 @@ class ArticleService:
         logger.info(f"获取第 {page} 页最新的文章，offset={offset}, limit={page_size}")
         articles = await ArticleCRUD(self.session).get_by_page(offset, page_size)
         user_ids = list({a.user_id for a in articles})
-        id_to_name = {}
+        id_to_user = {}
         if user_ids:
-            res = await self.session.execute(select(User.id, User.username).where(User.id.in_(user_ids)))
-            id_to_name = {row[0]: row[1] for row in res.all()}
+            for uid in user_ids:
+                info = await UserCRUD(self.session).get_user_info(uid)
+                if info:
+                    id_to_user[uid] = info
         return [
             {
                 "id": a.id,
-                "username": id_to_name.get(a.user_id, ""),
+                "username": getattr(id_to_user.get(a.user_id), "username", "") or "",
+                "avatar": getattr(id_to_user.get(a.user_id), "avatar", "") or "",
+                "gender": getattr(id_to_user.get(a.user_id), "gender", "") or "",
+                "year": getattr(id_to_user.get(a.user_id), "year", "") or "",
                 "tag": a.tag or "",
                 "content": a.content,
                 "create_time": a.create_time.strftime("%Y-%m-%d %H:%M"),
@@ -69,7 +75,7 @@ class ArticleService:
         if not await ArticleCRUD(self.session).check_exists(data.article_id):
             raise ValueError("文章不存在")
         # 判断用户是否存在
-        if not await UserCRUD(self.session).check_exists(user_id):
+        if not await AuthCRUD(self.session).check_exists(user_id):
             raise ValueError("用户不存在")
         # 判断父评论是否存在（如果不是一级评论）
         if data.parent_id != 0 and not await ArticleCRUD(self.session).check_parent_exists(data.parent_id):
@@ -93,14 +99,17 @@ class ArticleService:
         offset = max(page - 1, 0) * page_size
         comments = await ArticleCRUD(self.session).get_comments(article_id, offset, page_size)
         user_ids = list({c.user_id for c in comments})
-        id_to_name = {}
+        id_to_user = {}
         if user_ids:
-            res = await self.session.execute(select(User.id, User.username).where(User.id.in_(user_ids)))
-            id_to_name = {row[0]: row[1] for row in res.all()}
+            for uid in user_ids:
+                info = await UserCRUD(self.session).get_user_info(uid)
+                if info:
+                    id_to_user[uid] = info
         return [
             {
                 "id": c.id,
-                "username": id_to_name.get(c.user_id, ""),
+                "username": getattr(id_to_user.get(c.user_id), "username", "") or "",
+                "avatar": getattr(id_to_user.get(c.user_id), "avatar", "") or "",
                 "parent_id": c.parent_id,
                 "content": c.content,
                 "create_time": c.create_time.strftime("%Y-%m-%d %H:%M"),
@@ -123,7 +132,7 @@ class ArticleService:
         if not await ArticleCRUD(self.session).check_exists(article_id):
             raise ValueError("文章不存在")
         # 判断用户是否存在
-        if not await UserCRUD(self.session).check_exists(user_id):
+        if not await AuthCRUD(self.session).check_exists(user_id):
             raise ValueError("用户不存在")
         # 检查是否已点赞
         if await ArticleCRUD(self.session).check_like(article_id, user_id):

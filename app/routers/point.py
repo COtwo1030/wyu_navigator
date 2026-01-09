@@ -5,7 +5,7 @@ from app.dependencies import get_session
 from app.schemas.point import PointData
 from app.services.point import PointService
 
-router = APIRouter(prefix="/point",tags=["point"])
+router = APIRouter(prefix="/point",tags=["地点"])
 
 # 添加地点
 @router.post("/add", status_code=200,description="添加地点")

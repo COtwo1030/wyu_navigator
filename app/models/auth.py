@@ -10,7 +10,7 @@ class User(Base):
     hashed_password : Mapped[str] = mapped_column(String(100), nullable=False) # 密码，非空
     email : Mapped[str] = mapped_column(String(50), unique=True, nullable=False) # 邮箱，唯一，非空
     create_time : Mapped[DateTime] = mapped_column(DateTime, nullable=False) # 创建时间，非空
-    
+
 # 邮箱验证码表
 class EmailCode(Base):
     __tablename__ = "email_codes"
