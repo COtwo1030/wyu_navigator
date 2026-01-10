@@ -9,3 +9,7 @@ page, .post { height: 100vh; display: flex; flex-direction: column; background: 
 .tag-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .tag-btn { height: 28px; padding: 0 10px; border-radius: 14px; background: #e9eef8; color: #2E6ADF; display: flex; align-items: center; justify-content: center; font-size: 12px; }
 .selected-tag { height: 28px; padding: 0 10px; border-radius: 14px; background: #fff2e8; color: #fa6400; border: 1px solid #ffd5b3; font-size: 12px; display: flex; align-items: center; }
+/* 上传图片区域：三列网格，上传图标与图片同尺寸 */
+.upload-grid { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.upload-item { width: calc((100% - 16px) / 3); height: 96px; border-radius: 8px; overflow: hidden; background: #eee; }
+.upload-img { width: 100%; height: 100%; }

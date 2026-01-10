@@ -357,3 +357,46 @@ class ArticleCRUD:
         view_record = ArticleView(article_id=article_id, user_id=user_id)
         self.session.add(view_record)
         await self.session.commit()
+    
+    # 查询用户发表的文章
+    async def get_by_user(self, user_id: int) -> list[Article]:
+        """
+        查询用户发表的文章
+        参数:
+            user_id: 用户ID
+        返回:
+            list[Article]: 文章列表
+        """
+        # 查询文章
+        result = await self.session.execute(
+            select(Article).filter(Article.user_id == user_id)
+        )
+        return result.scalars().all()
+
+    # 批量根据ID查询文章
+    async def get_by_ids(self, ids: list[int]) -> list[Article]:
+        """
+        批量根据ID查询文章
+        参数:
+            ids: 文章ID列表
+        返回:
+            list[Article]: 文章列表
+        """
+        if not ids:
+            return []
+        stmt = select(Article).where(Article.id.in_(ids)).order_by(Article.id.desc())
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    # 查询用户的评论
+    async def get_comments_by_user_id(self, user_id: int) -> list[ArticleComment]:
+        """
+        查询用户的评论
+        参数:
+            user_id: 用户ID
+        返回:
+            list[ArticleComment]: 评论列表
+        """
+        stmt = select(ArticleComment).where(ArticleComment.user_id == user_id).order_by(ArticleComment.id.desc())
+        result = await self.session.execute(stmt)
+        return result.scalars().all()

@@ -32,5 +32,20 @@
         </view>
       </view>
     </view>
+
+    <view class="my-card-row" wx:if="{{loggedIn}}">
+      <view class="my-card" bindtap="navToMyPosts">
+        <image class="my-card-icon" src="/images/tabbar/我发布的.png" mode="aspectFit"></image>
+        <text class="my-card-text">我发布的</text>
+      </view>
+      <view class="my-card" bindtap="navToMyLikes">
+        <image class="my-card-icon" src="/images/tabbar/我点赞的.png" mode="aspectFit"></image>
+        <text class="my-card-text">我点赞的</text>
+      </view>
+      <view class="my-card" bindtap="navToMyComments">
+        <image class="my-card-icon" src="/images/tabbar/我的评论.png" mode="aspectFit"></image>
+        <text class="my-card-text">我的评价</text>
+      </view>
+    </view>
   </view>
 </view>

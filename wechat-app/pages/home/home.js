@@ -83,6 +83,22 @@ Page({
   navToPost() {
     wx.navigateTo({ url: '/pages/post/post' })
   },
+  navToMyPosts() {
+    if (!this.data.loggedIn) { this.navToLogin(); return }
+    wx.navigateTo({ url: '/pages/myposts/myposts' })
+  },
+  navToMyLikes() {
+    if (!this.data.loggedIn) { this.navToLogin(); return }
+    wx.navigateTo({ url: '/pages/mylikes/mylikes' })
+  },
+  navToMyComments() {
+    if (!this.data.loggedIn) { this.navToLogin(); return }
+    wx.navigateTo({ url: '/pages/mycomments/mycomments' })
+  },
+  navToMyPosts() {
+    if (!this.data.loggedIn) { this.navToLogin(); return }
+    wx.navigateTo({ url: '/pages/myposts/myposts' })
+  },
   navToLogin() {
     wx.navigateTo({ url: '/pages/login/login' })
   },

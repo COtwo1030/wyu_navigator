@@ -16,6 +16,15 @@
 
   <view wx:if="{{article.tag}}" class="tag">#{{article.tag}}</view>
   <view class="content">{{article.content}}</view>
+  <block wx:if="{{article.imgs && article.imgs.length}}">
+    <view class="imgs-grid">
+      <block wx:for="{{article.imgs}}" wx:key="*this" wx:for-item="img" wx:for-index="idx">
+        <view class="img-wrap" bindtap="onPreviewImagesTap" data-idx="{{idx}}">
+          <image class="img-item" src="{{img}}" mode="aspectFill"></image>
+        </view>
+      </block>
+    </view>
+  </block>
 
   <view class="metrics">
     <view class="metric">
@@ -26,7 +35,7 @@
 
 <view class="comment-title">评论区</view>
 <block wx:for="{{threads}}" wx:key="id">
-  <view class="comment-item">
+  <view class="comment-item" id="comment-{{item.id}}">
     <view class="c-header">
       <image class="c-avatar" src="{{item.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
       <text class="c-username">{{item.username}}</text>
@@ -46,7 +55,7 @@
     <block wx:if="{{item.showReplies}}">
       <view class="replies">
         <block wx:for="{{item.children}}" wx:key="id" wx:for-item="child" wx:for-index="cidx">
-          <view class="reply-item">
+          <view class="reply-item" id="reply-{{child.id}}">
             <view class="r-header">
               <image class="r-avatar" src="{{child.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
               <text class="r-username">{{child.username}}</text>

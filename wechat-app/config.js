@@ -20,47 +20,41 @@ const config = {
     pointList: `${BASE}/point/list`,
     //pointList: 'http://10.40.130.240:8080/point/list',
     auth: {
-      // 获取验证码（code）接口
       code: `${BASE}/auth/code`,
-      // 账号密码登录接口
       pswlogin: `${BASE}/auth/pswlogin`,
-      // 邮箱登录接口
       emaillogin: `${BASE}/auth/emaillogin`,
       register: `${BASE}/auth/register`,
-      // 重置密码接口
       resetPassword: `${BASE}/auth/reset-password`,
-
     },
     // 文章服务接口
     article: {
-      // 创建文章接口
       create: `${BASE}/article/create`,
-      // 分页获取文章接口
       page: `${BASE}/article/page`,
-      // 浏览量增加接口
       view: `${BASE}/article/view`,
-      // 文章评论接口
       comment: `${BASE}/article/comment`,
-      // 获取文章评论列表接口
       comments: `${BASE}/article/comments`,
-      // 文章点赞接口（切换点赞状态）
       like: `${BASE}/article/like`,
       commentLike: `${BASE}/article/comment/like`,
       commentedArticleList: `${BASE}/article/comment/articlelist`,
-      likedList: `${BASE}/article/likelist`,
-      commentLikedList: `${BASE}/article/comment/likelist`
+      likedList: `${BASE}/article/user/likelist`,
+      likeIdList: `${BASE}/article/likeidlist`,
+      commentLikedList: `${BASE}/article/comment/likelist`,
+      user: `${BASE}/article/user`,
     },
-     // 用户接口
+    // 用户接口
     user: {
       info: `${BASE}/user/info`,
-      detail: `${BASE}/user/detail`
+      detail: `${BASE}/user/detail`,
     },
-    // 腾讯地图服务配置（请将 key 替换为你自己的密钥）
+    // 腾讯地图服务配置
     tencent: {
       key: 'SWABZ-BCY64-WIHUL-KCDGA-OMFUV-JWFS5',
-      // 路径说明：此为基础端点（默认步行），实际模式由前端 routeMode 动态拼接为 /{walking|bicycling|driving}
-      directionUrl: 'https://apis.map.qq.com/ws/direction/v1/walking'
-    }
+      directionUrl: 'https://apis.map.qq.com/ws/direction/v1/walking',
+    },
+    // 存储服务接口
+    storage: {
+      uploadUrl: `${BASE}/storage/upload_url`,
+    },
   },
   
 

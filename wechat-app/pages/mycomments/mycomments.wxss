@@ -1,0 +1,5 @@
+page { background: #fff; }
+.mycomments { padding: 12px; }
+.list { height: calc(100vh - 44px); }
+.card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 12px; }
+.content { color: #333; line-height: 1.6; }

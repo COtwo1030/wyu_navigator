@@ -1,0 +1,12 @@
+<navigation-bar extClass="nav-default" title="{{'我点赞的'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view class="mylikes">
+  <scroll-view scroll-y class="list">
+    <block wx:for="{{articles}}" wx:key="id">
+      <view class="card" bindtap="onCardTap" data-id="{{item.id}}">
+        <view wx:if="{{item.tag}}" class="tag">#{{item.tag}}</view>
+        <view class="content">{{item.content}}</view>
+        <image wx:if="{{item.img}}" class="img" src="{{item.img}}" mode="widthFix"></image>
+      </view>
+    </block>
+  </scroll-view>
+</view>

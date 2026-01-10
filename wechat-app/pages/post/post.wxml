@@ -8,6 +8,16 @@
     <view class="textarea-wrap">
       <textarea class="textarea" placeholder="请输入内容" value="{{content}}" auto-height="true" bindinput="onContentInput"></textarea>
     </view>
+    <view class="upload-grid">
+      <block wx:for="{{images}}" wx:key="*this" wx:for-item="img">
+        <view class="upload-item">
+          <image class="upload-img" src="{{img}}" mode="aspectFill"></image>
+        </view>
+      </block>
+      <view class="upload-item add" catchtap="onUploadTap">
+        <image class="upload-img" src="/images/tabbar/upload.png" mode="aspectFit"></image>
+      </view>
+    </view>
     <button class="btn primary" bindtap="onSubmit">发表</button>
   </view>
 </view>

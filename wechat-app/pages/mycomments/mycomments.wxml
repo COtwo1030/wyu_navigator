@@ -1,0 +1,10 @@
+<navigation-bar extClass="nav-default" title="{{'我的评价'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view class="mycomments">
+  <scroll-view scroll-y class="list">
+    <block wx:for="{{comments}}" wx:key="id">
+      <view class="card" bindtap="onCardTap" data-id="{{item.article_id}}" data-comment-id="{{item.id}}" data-parent-id="{{item.parent_id}}">
+        <view class="content">{{item.content}}</view>
+      </view>
+    </block>
+  </scroll-view>
+</view>

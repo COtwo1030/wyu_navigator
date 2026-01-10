@@ -12,7 +12,7 @@ class Article(Base):
     user_id : Mapped[int] = mapped_column(nullable=False) # 用户ID，非空
     tag : Mapped[str] = mapped_column(String(20), nullable=True) # 文章标签，可空
     content : Mapped[str] = mapped_column(String(500), nullable=False) # 文章内容，非空
-    img : Mapped[str] = mapped_column(String(200), nullable=True) # 文章图片URL，可空
+    img : Mapped[str] = mapped_column(String(500), nullable=True) # 文章图片URL，可空
     view_count : Mapped[int] = mapped_column(default=0) # 文章阅读次数，默认0
     like_count : Mapped[int] = mapped_column(default=0) # 文章点赞次数，默认0
     comment_count : Mapped[int] = mapped_column(default=0) # 文章评论次数，默认0

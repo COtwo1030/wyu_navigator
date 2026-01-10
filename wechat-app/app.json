@@ -8,7 +8,10 @@
     "pages/register/register",
     "pages/reset/reset",
     "pages/post/post",
-    "pages/article/detail"
+    "pages/article/detail",
+    "pages/myposts/myposts",
+    "pages/mylikes/mylikes",
+    "pages/mycomments/mycomments"
   ],
   "window": {
     "navigationBarTextStyle": "black",

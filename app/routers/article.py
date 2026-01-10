@@ -61,7 +61,7 @@ async def like_comment(
     return await ArticleService(session).like_comment(comment_id, user_id)
 
 # 查询用户点赞的文章id列表
-@router.get("/likelist", status_code=200,description="查询用户点赞的文章id列表")
+@router.get("/likeidlist", status_code=200,description="查询用户点赞的文章id列表")
 async def get_liked_articles(
     session: AsyncSession = Depends(get_session),
     user_id: int = Depends(get_current_user_id),
@@ -99,3 +99,31 @@ async def increase_view_count(
     else:
         user_id = 0
     return await ArticleService(session).increase_view_count(article_id, user_id)
+
+# 查询用户发表的文章
+@router.get("/user", status_code=200,description="查询用户发表的文章")
+async def get_user_articles(
+    user_id: int = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+):
+    return await ArticleService(session).get_by_user(user_id)
+
+# 查询用户点赞过的文章
+@router.get("/user/likelist", status_code=200,description="查询用户点赞的文章列表")
+async def get_liked_articles(
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    # 查询用户点赞的文章id列表
+    articles_ids = await ArticleService(session).get_liked_articles(user_id)
+    # 查询用户点赞的文章列表
+    articles = await ArticleService(session).get_articles_by_article_ids(articles_ids)
+    return articles
+
+# 查询用户的评论
+@router.get("/user/commentlist", status_code=200,description="查询用户的评论列表")
+async def get_user_comments(
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).get_comments_by_user_id(user_id)

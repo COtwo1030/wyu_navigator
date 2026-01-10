@@ -1,7 +1,7 @@
 const config = require('../../config.js')
 
 Page({
-  data: { article: {}, comments: [], threads: [], commentText: '', commentFocus: false, liked: false, likedComments: {}, commentParentId: 0, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true },
+  data: { article: {}, comments: [], threads: [], commentText: '', commentFocus: false, liked: false, likedComments: {}, commentParentId: 0, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, targetCommentId: 0, targetCommentParentId: 0 },
 
   onLoad(options) {
     const ec = this.getOpenerEventChannel && this.getOpenerEventChannel()
@@ -11,13 +11,14 @@ Page({
         const year = item.year || ''
         const genderIcon = item.genderIcon || (gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''))
         const yearText = item.yearText || (year ? `${year}级` : '')
-        const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText }
-        this.setData({ article: enhanced, liked: !!enhanced.liked, commentFocus: true, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [] })
+        const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText, imgs: String(item.img || '').split(',').map(s => s.trim()).filter(s => !!s) }
+        const wantFocus = !!item.openComment
+        this.setData({ article: enhanced, liked: !!enhanced.liked, commentFocus: wantFocus, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: Number(item.targetCommentId || 0), targetCommentParentId: Number(item.targetCommentParentId || 0) })
         this.increaseView(item.id)
         const token = wx.getStorageSync('token') || ''
         if (token) {
           wx.request({
-            url: `${config.api.article.likedList}`,
+            url: `${config.api.article.likeIdList}`,
             method: 'GET',
             header: { Authorization: `Bearer ${token}` },
             success: (r) => {
@@ -32,12 +33,12 @@ Page({
       })
     } else if (options && options.id) {
       const id = Number(options.id)
-      this.setData({ article: { id }, liked: false, commentFocus: true, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [] })
+      this.setData({ article: { id }, liked: false, commentFocus: false, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: 0, targetCommentParentId: 0 })
       this.increaseView(id)
       const token = wx.getStorageSync('token') || ''
       if (token) {
         wx.request({
-          url: `${config.api.article.likedList}`,
+          url: `${config.api.article.likeIdList}`,
           method: 'GET',
           header: { Authorization: `Bearer ${token}` },
           success: (r) => {
@@ -50,6 +51,13 @@ Page({
       }
       this.fetchComments(id)
     }
+  },
+  onPreviewImagesTap(e) {
+    const idx = Number(e.currentTarget.dataset.idx || 0)
+    const urls = (this.data.article.imgs || [])
+    if (!urls.length) return
+    const current = urls[Math.max(0, Math.min(idx, urls.length - 1))]
+    wx.previewImage({ urls, current })
   },
 
   increaseView(id) {
@@ -147,6 +155,34 @@ Page({
               this.setData({ threads: tds, likedComments: set })
             }
           })
+        }
+        const tcid = Number(this.data.targetCommentId || 0)
+        if (tcid > 0) {
+          const tpid = Number(this.data.targetCommentParentId || 0)
+          const tds = (this.data.threads || []).slice()
+          if (tpid > 0) {
+            let idx = -1
+            for (let i = 0; i < tds.length; i++) {
+              const children = tds[i].children || []
+              for (let j = 0; j < children.length; j++) {
+                if (Number(children[j].id) === tcid) { idx = i; break }
+              }
+              if (idx >= 0) break
+            }
+            if (idx >= 0) {
+              const c = tds[idx] || {}
+              tds[idx] = { ...c, showReplies: true }
+              this.setData({ threads: tds })
+              wx.pageScrollTo({ selector: `#reply-${tcid}`, duration: 200 })
+              this.setData({ targetCommentId: 0, targetCommentParentId: 0 })
+            }
+          } else {
+            const found = tds.find(t => Number(t.id) === tcid)
+            if (found) {
+              wx.pageScrollTo({ selector: `#comment-${tcid}`, duration: 200 })
+              this.setData({ targetCommentId: 0, targetCommentParentId: 0 })
+            }
+          }
         }
         if (hasMore && added > 0) {
           this.setData({ commentPage: this.data.commentPage + 1 })

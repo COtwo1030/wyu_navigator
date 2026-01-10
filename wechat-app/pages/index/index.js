@@ -10,6 +10,16 @@ Page({
     categories: ['全部','求助','闲置','跑腿'],
     activeCategoryIndex: 0
   },
+  onPreviewImages(e) {
+    const aid = Number(e.currentTarget.dataset.id)
+    const idx = Number(e.currentTarget.dataset.idx || 0)
+    const list = this.data.displayArticles || []
+    const item = list.find(a => Number(a.id) === aid) || {}
+    const urls = (item.imgs || [])
+    if (!urls.length) return
+    const current = urls[Math.max(0, Math.min(idx, urls.length - 1))]
+    wx.previewImage({ urls, current })
+  },
   navToPost() { wx.navigateTo({ url: '/pages/post/post' }) },
   onShow() { this.resetAndFetch() },
   onReachBottom() {
@@ -58,7 +68,8 @@ Page({
             ...a,
             avatar: a.avatar || '/images/tabbar/avator.png',
             genderIcon: gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''),
-            yearText: year ? `${year}级` : ''
+            yearText: year ? `${year}级` : '',
+            imgs: String(a.img || '').split(',').map(s => s.trim()).filter(s => !!s)
           }
         })
         const hasMore = enhanced.length === pageSize
@@ -67,7 +78,7 @@ Page({
         const isLoggedIn = !!token
         if (isLoggedIn) {
           wx.request({
-            url: `${config.api.article.likedList}`,
+            url: `${config.api.article.likeIdList}`,
             method: 'GET',
             header: { Authorization: `Bearer ${token}` },
             success: (r) => {
@@ -182,7 +193,7 @@ Page({
     const item = (this.data.articles || []).find(a => a.id === id) || { id }
     wx.navigateTo({
       url: '/pages/article/detail',
-      success: (res) => { res.eventChannel.emit('article', item) }
+      success: (res) => { res.eventChannel.emit('article', { ...item, openComment: true }) }
     })
   },
   onCardTap(e) {

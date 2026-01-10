@@ -94,12 +94,24 @@ Component({
     },
     back() {
       const data = this.data
-      if (data.delta) {
-        wx.navigateBack({
-          delta: data.delta
-        })
-      }
-      this.triggerEvent('back', { delta: data.delta }, {})
+      const d = data.delta || 1
+      wx.navigateBack({
+        delta: d,
+        success: () => {
+          this.triggerEvent('back', { delta: d }, {})
+        },
+        fail: () => {
+          this.triggerEvent('back', { delta: d }, {})
+          const pages = getCurrentPages()
+          if (!pages || pages.length <= 1) {
+            if (wx.switchTab) {
+              wx.switchTab({ url: '/pages/index/index' })
+            } else {
+              wx.navigateTo({ url: '/pages/index/index' })
+            }
+          }
+        }
+      })
     }
   },
 })
