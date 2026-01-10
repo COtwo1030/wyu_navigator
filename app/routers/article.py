@@ -16,6 +16,15 @@ async def create_article(
 ):
     return await ArticleService(session).create(data, user_id)
 
+# 删除文章
+@router.delete("/delete", status_code=200,description="删除文章")
+async def delete_article(
+    article_id: int = Body(..., embed=True),
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).delete(article_id, user_id)
+
 # 按时间顺序分页获取最新的文章（一页十条）
 @router.get("/page", status_code=200,description="按时间顺序分页获取最新的文章（一页十条）")
 async def get_articles_by_page(

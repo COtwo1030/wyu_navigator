@@ -11,7 +11,76 @@ Page({
     showForm: false,
     genderOptions: ['男','女'],
     formGender: '',
-    formYear: ''
+    formYear: '',
+    formUsername: '',
+    yearOptions: []
+  },
+  onAvatarTap() {
+    const token = wx.getStorageSync('token') || ''
+    const avatar = this.data.avatarSrc || ''
+    wx.showActionSheet({
+      itemList: ['更换头像','查看头像'],
+      success: (res) => {
+        if (res.tapIndex === 1) {
+          const urls = [avatar].filter(Boolean)
+          if (urls.length) wx.previewImage({ urls, current: urls[0] })
+          return
+        }
+        if (res.tapIndex === 0) {
+          if (!token) { wx.showToast({ title: '请先登录', icon: 'none' }); this.navToLogin(); return }
+          wx.chooseImage({
+            count: 1,
+            sizeType: ['compressed'],
+            sourceType: ['album','camera'],
+            success: async (sel) => {
+              const paths = sel.tempFilePaths || []
+              if (!paths.length) return
+              wx.showLoading({ title: '上传中...' })
+              try {
+                const filePath = paths[0]
+                const ext = (filePath.match(/\.(jpg|jpeg|png)$/i) || [])[0] || '.jpg'
+                const ct = (/\.png$/i.test(ext)) ? 'image/png' : 'image/jpeg'
+                const key = `${Date.now()}_${Math.floor(Math.random()*100000)}${ext}`
+                const uploadUrl = await this.getUploadUrl(key, ct)
+                const fs = wx.getFileSystemManager()
+                const data = await new Promise((resolve, reject) => {
+                  fs.readFile({ filePath, success: (r) => resolve(r.data), fail: reject })
+                })
+                await new Promise((resolve, reject) => {
+                  wx.request({ url: uploadUrl, method: 'PUT', header: { 'Content-Type': ct }, data, success: (r) => { const code = r.statusCode; if (code >= 200 && code < 300) resolve(); else reject(new Error(String(code))) }, fail: reject })
+                })
+                const link = `https://wuyu.s3.bitiful.net/${key}`
+                await new Promise((resolve) => {
+                  wx.request({ url: `${config.api.user.avatar}?avatar_url=${encodeURIComponent(link)}`, method: 'POST', header: { Authorization: `Bearer ${token}` }, success: () => resolve(), fail: () => resolve() })
+                })
+                this.setData({ avatarSrc: link })
+                wx.hideLoading()
+                wx.showToast({ title: '更新成功', icon: 'success' })
+              } catch (e) {
+                wx.hideLoading()
+                wx.showToast({ title: '上传失败', icon: 'none' })
+              }
+            }
+          })
+        }
+      }
+    })
+  },
+  getUploadUrl(key, contentType) {
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: `${config.api.storage.uploadUrl}?key=${encodeURIComponent(key)}&content_type=${encodeURIComponent(contentType)}`,
+        method: 'GET',
+        timeout: 10000,
+        success: (res) => {
+          const ok = res.statusCode === 200
+          const url = ok && res.data && res.data.url
+          if (!url) return reject(new Error('缺少上传URL'))
+          resolve(url)
+        },
+        fail: reject
+      })
+    })
   },
   onShow() {
     const i = 4
@@ -60,7 +129,7 @@ Page({
         this.setData({
           loggedIn: true,
           avatarSrc: info.avatar || '/images/tabbar/avator.png',
-          username,
+          username: info.username || username,
           gender,
           genderIcon,
           year,
@@ -102,6 +171,19 @@ Page({
   navToLogin() {
     wx.navigateTo({ url: '/pages/login/login' })
   },
+  onProfileActionTap() {
+    if (!this.data.loggedIn) { this.navToLogin(); return }
+    wx.showActionSheet({
+      itemList: ['修改详情','退出登录'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          this.onEditProfile()
+        } else if (res.tapIndex === 1) {
+          this.onLogout()
+        }
+      }
+    })
+  },
   onLogout() {
     try {
       wx.removeStorageSync('token')
@@ -123,7 +205,22 @@ Page({
   },
   onEditProfile() {
     if (!this.data.loggedIn) { this.navToLogin(); return }
-    this.setData({ showForm: true, formGender: this.data.gender || '', formYear: this.data.year || '' })
+    if (!(this.data.yearOptions && this.data.yearOptions.length)) {
+      const now = new Date().getFullYear()
+      const list = []
+      for (let y = now; y >= 1985; y--) list.push(String(y))
+      this.setData({ yearOptions: list })
+    }
+    this.setData({ showForm: true, formUsername: this.data.username || '', formGender: this.data.gender || '', formYear: this.data.year || '' })
+  },
+  onUsernameInput(e) {
+    const val = String(e.detail.value || '').trim()
+    this.setData({ formUsername: val })
+  },
+  onYearChange(e) {
+    const idx = Number(e.detail.value)
+    const val = (this.data.yearOptions || [])[idx] || ''
+    this.setData({ formYear: val })
   },
   onGenderChange(e) {
     const idx = Number(e.detail.value)
@@ -138,17 +235,18 @@ Page({
   onSubmitDetail() {
     const token = wx.getStorageSync('token') || ''
     if (!token) { this.navToLogin(); return }
+    const username = (this.data.formUsername || '').trim()
     const gender = (this.data.formGender || '').trim()
     const year = (this.data.formYear || '').trim()
     if (!gender || !year) { wx.showToast({ title: '请完善信息', icon: 'none' }); return }
     wx.request({
-      url: `${config.api.user.detail}?gender=${encodeURIComponent(gender)}&year=${encodeURIComponent(year)}`,
+      url: `${config.api.user.detail}?username=${encodeURIComponent(username)}&gender=${encodeURIComponent(gender)}&year=${encodeURIComponent(year)}`,
       method: 'POST',
       header: { Authorization: `Bearer ${token}` },
       success: (res) => {
         if (res.statusCode !== 200) { wx.showToast({ title: '保存失败', icon: 'none' }); return }
         const yearText = year ? `${year}级` : ''
-        this.setData({ gender, year, yearText, showForm: false })
+        this.setData({ username, gender, year, yearText, showForm: false })
         wx.showToast({ title: '已保存', icon: 'success' })
       },
       fail: () => { wx.showToast({ title: '网络异常', icon: 'none' }) }

@@ -2,10 +2,6 @@
 <view class="register">
   <view class="form">
     <view class="input-wrap">
-      <image class="icon" src="/images/tabbar/username.png" mode="aspectFit"></image>
-      <input class="input" type="text" placeholder="请输入用户名" value="{{username}}" bindinput="onUsernameInput" />
-    </view>
-    <view class="input-wrap">
       <image class="icon" src="/images/tabbar/email.png" mode="aspectFit"></image>
       <input class="input" type="text" placeholder="请输入邮箱" value="{{email}}" bindinput="onEmailInput" />
     </view>

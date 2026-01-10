@@ -24,6 +24,18 @@ class ArticleService:
         """
         logger.info(f"用户 {user_id} 创建文章: {article}")
         return await ArticleCRUD(self.session).create(article, user_id)
+    # 删除文章
+    async def delete(self, article_id: int, user_id: int) -> bool:
+        """
+        删除文章
+        参数:
+            article_id: 文章ID
+            user_id: 从 token 解析出的用户ID
+        返回:
+            bool: 是否删除成功
+        """
+        logger.info(f"用户 {user_id} 删除文章 {article_id}")
+        return await ArticleCRUD(self.session).delete(article_id, user_id)
     # 按时间顺序分页获取最新的文章（一页十条）
     async def get_by_page(self, page: int = 1) -> list[dict]:
         """
@@ -241,33 +253,20 @@ class ArticleService:
         参数:
             user_id: 用户ID
         返回:
-            list[Article]: 文章列表
+            list[dict]: 精简文章列表（仅 id、tag、content、img）
         """
         # 判断用户是否存在
         if not await AuthCRUD(self.session).check_exists(user_id):
             raise ValueError("用户不存在")
         # 查询文章
         articles = await ArticleCRUD(self.session).get_by_user(user_id)
-        # 统一返回结构，补充用户信息
-        id_to_user = {}
-        info = await UserCRUD(self.session).get_user_info(user_id)
-        if info:
-            id_to_user[user_id] = info
         logger.info(f"用户 {user_id} 查询发表的文章")
         return [
             {
                 "id": a.id,
-                "username": getattr(id_to_user.get(a.user_id), "username", "") or "",
-                "avatar": getattr(id_to_user.get(a.user_id), "avatar", "") or "",
-                "gender": getattr(id_to_user.get(a.user_id), "gender", "") or "",
-                "year": getattr(id_to_user.get(a.user_id), "year", "") or "",
                 "tag": a.tag or "",
                 "content": a.content,
-                "img": a.img or "",
-                "create_time": a.create_time.strftime("%Y-%m-%d %H:%M"),
-                "view_count": a.view_count,
-                "like_count": a.like_count,
-                "comment_count": a.comment_count
+                "img": a.img or ""
             }
             for a in articles
         ]

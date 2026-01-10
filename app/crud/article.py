@@ -30,18 +30,43 @@ class ArticleCRUD:
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise e
+    # 删除文章
+    async def delete(self, article_id: int, user_id: int) -> bool:
+        """
+        删除文章（文章status设置为1）
+        参数:
+            article_id: 文章ID
+            user_id: 发布用户ID
+        返回:
+            bool: 是否删除成功
+        """
+        try:
+            # 检查文章是否存在
+            article = await self.session.get(Article, article_id)
+            if not article:
+                return False
+            # 检查用户是否有权限删除
+            if article.user_id != user_id:
+                return False
+            # 删除文章
+            article.status = 1
+            await self.session.commit()
+            return True
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise e
 
     # 按时间顺序分页获取文章
     async def get_by_page(self, offset: int, limit: int):
         """
-        按创建时间倒序分页查询
+        按创建时间倒序分页查询文章（status为0）
         参数:
             offset: 偏移量
             limit: 每页数量
         返回:
             文章模型列表
         """
-        stmt = select(Article).order_by(Article.id.desc()).offset(offset).limit(limit)
+        stmt = select(Article).filter(Article.status == 0).order_by(Article.id.desc()).offset(offset).limit(limit)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -320,13 +345,20 @@ class ArticleCRUD:
     # 查询用户评论过的文章id列表
     async def get_commented_articles(self, user_id: int) -> list[int]:
         """
-        查询用户评论过的文章id列表
+        查询用户评论过的文章id列表（status为0）
         参数:
             user_id: 用户ID
         返回:
             list[int]: 文章id列表（Article.id）
         """
-        stmt = select(ArticleComment.article_id).where(ArticleComment.user_id == user_id)
+        # 先查该用户评论过的文章id（去重）
+        sub_stmt = select(ArticleComment.article_id).where(ArticleComment.user_id == user_id).distinct()
+        sub_result = await self.session.execute(sub_stmt)
+        commented_ids = [row[0] for row in sub_result.all()]
+        if not commented_ids:
+            return []
+        # 再过滤掉已删除的文章（status==0）
+        stmt = select(Article.id).where(Article.id.in_(commented_ids), Article.status == 0)
         result = await self.session.execute(stmt)
         return [row[0] for row in result.all()]
     
@@ -361,7 +393,7 @@ class ArticleCRUD:
     # 查询用户发表的文章
     async def get_by_user(self, user_id: int) -> list[Article]:
         """
-        查询用户发表的文章
+        查询用户发表的文章（status为0）
         参数:
             user_id: 用户ID
         返回:
@@ -369,14 +401,14 @@ class ArticleCRUD:
         """
         # 查询文章
         result = await self.session.execute(
-            select(Article).filter(Article.user_id == user_id)
+            select(Article).filter(Article.user_id == user_id, Article.status == 0)
         )
         return result.scalars().all()
 
     # 批量根据ID查询文章
     async def get_by_ids(self, ids: list[int]) -> list[Article]:
         """
-        批量根据ID查询文章
+        批量根据ID查询文章（status为0）
         参数:
             ids: 文章ID列表
         返回:
@@ -384,7 +416,7 @@ class ArticleCRUD:
         """
         if not ids:
             return []
-        stmt = select(Article).where(Article.id.in_(ids)).order_by(Article.id.desc())
+        stmt = select(Article).where(Article.id.in_(ids), Article.status == 0).order_by(Article.id.desc())
         result = await self.session.execute(stmt)
         return result.scalars().all()
 

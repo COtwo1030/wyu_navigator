@@ -3,18 +3,21 @@
 
   <view class="content">
     <view class="profile">
-      <image class="avatar" src="{{avatarSrc}}" mode="aspectFill"></image>
+      <image class="avatar" src="{{avatarSrc}}" mode="aspectFill" bindtap="onAvatarTap"></image>
       <view class="info">
         <view class="username-row">
-          <view class="username" bindtap="onEditProfile">{{username}}</view>
+          <view class="username" bindtap="onProfileActionTap">{{username}}</view>
           <text class="login-tip" wx:if="{{!loggedIn}}" bindtap="navToLogin">登录</text>
-          <button class="logout-btn" wx:if="{{loggedIn}}" bindtap="onLogout">退出登录</button>
         </view>
         <view class="meta" wx:if="{{loggedIn && (genderIcon || yearText)}}">
-          <image wx:if="{{genderIcon}}" class="gender-icon" src="/images/tabbar/{{genderIcon}}" mode="aspectFit"></image>
-          <view wx:if="{{yearText}}" class="year-badge">{{yearText}}</view>
+          <image wx:if="{{genderIcon}}" class="gender-icon" src="/images/tabbar/{{genderIcon}}" mode="aspectFit" bindtap="onProfileActionTap"></image>
+          <view wx:if="{{yearText}}" class="year-badge" bindtap="onProfileActionTap">{{yearText}}</view>
         </view>
         <view class="edit-form" wx:if="{{showForm}}">
+          <view class="form-row">
+            <text class="label">用户名</text>
+            <input class="input" type="text" value="{{formUsername}}" bindinput="onUsernameInput" placeholder="请输入用户名"/>
+          </view>
           <view class="form-row">
             <text class="label">性别</text>
             <picker mode="selector" range="{{genderOptions}}" bindchange="onGenderChange">
@@ -23,7 +26,9 @@
           </view>
           <view class="form-row">
             <text class="label">入学年份</text>
-            <input class="input" type="number" value="{{formYear}}" bindinput="onYearInput" placeholder="如 2022"/>
+            <picker mode="selector" range="{{yearOptions}}" bindchange="onYearChange">
+              <view class="picker">{{formYear || '请选择'}}</view>
+            </picker>
           </view>
           <view class="form-actions">
             <button class="save-btn" bindtap="onSubmitDetail">保存</button>
@@ -47,5 +52,6 @@
         <text class="my-card-text">我的评价</text>
       </view>
     </view>
+    
   </view>
 </view>

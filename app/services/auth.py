@@ -35,12 +35,10 @@ class AuthService:
         if (datetime.now() - EmailCode.create_time).seconds > 600:
             logger.warning(f"登录失败: 验证码过期 - {data.email}")
             raise HTTPException(status_code=400, detail="验证码过期")
-        # 获取用户名
-        username = await AuthCRUD(self.session).search_username(email=data.email)
         user_id = await AuthCRUD(self.session).search_user_id_by_email(email=data.email)
         logger.success(f"用户登录成功: email={data.email}")
         token = create_access_token(user_id)
-        return {"access_token": token, "token_type": "bearer", "message": "登录成功", "username": username}
+        return {"access_token": token, "token_type": "bearer", "message": "登录成功"}
 
 
     async def psw_login(self, data: PswLoginData):
@@ -61,13 +59,11 @@ class AuthService:
         if not is_valid:
             logger.warning(f"登录失败: 密码错误 - {data.email}")
             raise HTTPException(status_code=400, detail="密码错误")
-        # 获取用户名
-        username = await AuthCRUD(self.session).search_username(email=data.email)
         user_id = await AuthCRUD(self.session).search_user_id_by_email(email=data.email)
         logger.success(f"用户登录成功: email={data.email}")
         token = create_access_token(user_id)
-        return {"access_token": token, "token_type": "bearer", "message": "登录成功", "username": username}
-    
+        return {"access_token": token, "token_type": "bearer", "message": "登录成功"}
+        
     async def user_register(self, data: RegisterData):
         """
         处理用户注册
@@ -76,7 +72,7 @@ class AuthService:
         返回:
             User: 注册的用户
         """
-        logger.info(f"开始处理用户注册: email={data.email}, username={data.username}")
+        logger.info(f"开始处理用户注册: email={data.email}")
         
         # 查询验证码
         EmailCode = await EmailCodeCRUD(self.session).search_code(email=data.email, code=data.code)
@@ -98,7 +94,7 @@ class AuthService:
         # 初始化用户详情
         user_detail = {
             "user_id": new_user.id,
-            "username": data.username,
+            "username": "用户" + str(new_user.id),
             "avatar": settings.DEFAULT_AVATAR[randint(0, len(settings.DEFAULT_AVATAR) - 1)], # 随机选择一个默认头像
             "create_time": datetime.now(),
         }

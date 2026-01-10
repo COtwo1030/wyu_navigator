@@ -1,7 +1,6 @@
 const config = require('../../config.js')
 Page({
-  data: { username: '', email: '', password: '', confirm_password: '', code: '', pwdVisible: false, cpwdVisible: false },
-  onUsernameInput(e) { this.setData({ username: e.detail.value || '' }) },
+  data: { email: '', password: '', confirm_password: '', code: '', pwdVisible: false, cpwdVisible: false },
   onEmailInput(e) { this.setData({ email: e.detail.value || '' }) },
   onPasswordInput(e) { this.setData({ password: e.detail.value || '' }) },
   onConfirmPwdInput(e) { this.setData({ confirm_password: e.detail.value || '' }) },
@@ -30,16 +29,17 @@ Page({
     })
   },
   onSubmit() {
-    const username = (this.data.username || '').trim()
     const email = (this.data.email || '').trim()
     const password = (this.data.password || '').trim()
     const confirm_password = (this.data.confirm_password || '').trim()
     const code = (this.data.code || '').trim()
-    if (!username) return wx.showToast({ title: '请填写用户名', icon: 'none' })
     if (!email) return wx.showToast({ title: '请填写邮箱', icon: 'none' })
     if (!password) return wx.showToast({ title: '请填写密码', icon: 'none' })
     if (!confirm_password) return wx.showToast({ title: '请确认密码', icon: 'none' })
     if (!code) return wx.showToast({ title: '请填写验证码', icon: 'none' })
+    let username = (email.split('@')[0] || '').trim()
+    if (username.length < 3) username = (`user_${Date.now()}`).slice(0, 20)
+    else username = username.slice(0, 20)
     wx.showLoading({ title: '注册中...' })
     wx.request({
       url: config.api.auth.register,

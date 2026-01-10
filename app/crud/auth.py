@@ -32,7 +32,6 @@ class AuthCRUD:
             User: 创建的用户, 包含用户ID
         """
         user = User(
-            username=data.username,
             email=data.email,
             hashed_password=data.password,
             create_time=datetime.now()

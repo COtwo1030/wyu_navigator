@@ -16,11 +16,21 @@ Page({
           id: a.id,
           tag: a.tag || '',
           content: a.content || '',
-          img: a.img || ''
+          imgs: String(a.img || '').split(',').map(s => s.trim()).filter(s => !!s)
         }))
         this.setData({ articles: items })
       }
     })
+  },
+  onPreviewImages(e) {
+    const aid = Number(e.currentTarget.dataset.id)
+    const idx = Number(e.currentTarget.dataset.idx || 0)
+    const list = this.data.articles || []
+    const item = list.find(a => Number(a.id) === aid) || {}
+    const urls = (item.imgs || [])
+    if (!urls.length) return
+    const current = urls[Math.max(0, Math.min(idx, urls.length - 1))]
+    wx.previewImage({ urls, current })
   },
   onCardTap(e) {
     const id = Number(e.currentTarget.dataset.id)

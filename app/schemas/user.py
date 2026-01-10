@@ -13,6 +13,7 @@ class UserData(BaseModel):
 
 # 用户详情请求体
 class UserDetailData(BaseModel):
+    username: Annotated[str, Field(..., description="用户名")]
     gender: Annotated[str, Field(..., description="性别")]
     year: Annotated[str, Field(..., description="入学年份")]
 

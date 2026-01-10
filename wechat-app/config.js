@@ -33,6 +33,7 @@ const config = {
       view: `${BASE}/article/view`,
       comment: `${BASE}/article/comment`,
       comments: `${BASE}/article/comments`,
+      delete: `${BASE}/article/delete`,
       like: `${BASE}/article/like`,
       commentLike: `${BASE}/article/comment/like`,
       commentedArticleList: `${BASE}/article/comment/articlelist`,
@@ -45,6 +46,7 @@ const config = {
     user: {
       info: `${BASE}/user/info`,
       detail: `${BASE}/user/detail`,
+      avatar: `${BASE}/user/avatar`,
     },
     // 腾讯地图服务配置
     tencent: {
