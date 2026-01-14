@@ -16,6 +16,7 @@ MAIL_PORT = int(os.getenv("MAIL_PORT"))
 MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME")
 MAIL_STARTTLS = os.getenv("MAIL_STARTTLS", "True").lower() == "true"
 MAIL_SSL_TLS = os.getenv("MAIL_SSL_TLS", "False").lower() == "true"
+VALIDATE_CERTS = os.getenv("VALIDATE_CERTS", "False").lower() == "true"
 
 # JWT 配置
 JWT_SECRET = os.getenv("JWT_SECRET")

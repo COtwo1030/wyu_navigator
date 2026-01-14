@@ -11,7 +11,8 @@
     "pages/article/detail",
     "pages/myposts/myposts",
     "pages/mylikes/mylikes",
-    "pages/mycomments/mycomments"
+    "pages/mycomments/mycomments",
+    "pages/notifications/notifications"
   ],
   "window": {
     "navigationBarTextStyle": "black",

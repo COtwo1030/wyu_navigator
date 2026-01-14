@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models.user import UserDetail
-from app.schemas.user import UserDetailData, UserData
+from app.models.user import UserDetail, InteractiveMessage
+from app.schemas.user import UserDetailData, UserData, InteractData, InteractData
 
 # 用户CRUD
 class UserCRUD:
@@ -63,14 +63,13 @@ class UserCRUD:
             await self.session.execute(
                 UserDetail.__table__.update()
                 .where(UserDetail.user_id == user_id)
-                .values(**user_detail.dict())
+                .values(**user_detail.model_dump())
             )
             await self.session.commit()
             return True
         except:
             await self.session.rollback()
             return False
-    
     # 查询用户信息
     async def get_user_info(self, user_id: int) -> UserData:
         """
@@ -90,3 +89,95 @@ class UserCRUD:
             return UserData.model_validate(user_detail)
         else:
             return None
+    # 查询用户id，昵称和头像
+    async def get_user_username_avatar(self, user_id: int) -> dict:
+        """
+        根据用户ID查询用户名和头像
+        参数:
+            user_id (int): 用户ID
+        返回:
+            dict | None: {"username": str, "avatar": str}
+        """
+        result = await self.session.execute(
+            select(UserDetail.username, UserDetail.avatar).where(UserDetail.user_id == user_id)
+        )
+        row = result.first()
+        return {"username": row[0] or "", "avatar": row[1] or ""}
+    # 创建互动消息
+    async def create_interact(self, data: InteractData) -> bool:
+        """
+        创建互动消息
+        参数:
+            interact_data (InteractData): 互动消息数据
+        返回:
+            bool: 是否创建成功
+        """
+        try:
+            msg = InteractiveMessage(
+                receiver_id=data.receiver_id,
+                receiver_content=data.receiver_content,
+                receiver_img=data.receiver_img or "",
+                sender_id=data.sender_id,
+                sender_username=data.sender_username,
+                sender_avatar=data.sender_avatar,
+                interact_type=data.interact_type,
+                relate_id=data.relate_id,
+                sender_content=data.content,
+                sender_img=data.img or ""
+            )
+            self.session.add(msg)
+            await self.session.commit()
+            return True
+        except Exception as e:
+            logger.error(f"创建互动消息失败: {e}")
+            await self.session.rollback()
+            return False
+    # 查询用户互动记录
+    async def get_user_interact(self, user_id: int, is_read: int = 0) -> list[dict]:
+        """
+        查询用户互动记录
+        参数:
+            user_id (int): 用户ID
+            is_read (int): 是否已读（0未读，1已读），默认0
+        返回:
+            list[dict]: 互动记录列表
+        """
+        result = await self.session.execute(
+            select(InteractiveMessage)
+            .where(InteractiveMessage.receiver_id == user_id, InteractiveMessage.is_read == is_read)
+            .order_by(InteractiveMessage.create_time.desc())
+        )
+        records = result.scalars().all()
+        return [
+            {
+                "sender_username": r.sender_username,
+                "sender_avatar": r.sender_avatar or "",
+                "sender_content": r.sender_content,
+                "sender_img": r.sender_img or "",
+                "receiver_content": r.receiver_content or "",
+                "receiver_img": r.receiver_img or "",
+                "create_time": r.create_time.strftime("%Y-%m-%d %H:%M")
+            }
+            for r in records
+        ]
+    # 阅读用户互动记录
+    async def read_user_interact(self, user_id: int) -> bool:
+        """
+        将所有互动记录的is_read字段设为1
+        参数:
+            user_id (int): 用户ID
+        返回:
+            bool: 是否阅读成功
+        """
+        # 阅读用户互动记录
+        try:
+            await self.session.execute(
+                InteractiveMessage.__table__.update()
+                .where(InteractiveMessage.receiver_id == user_id)
+                .values(is_read=1)
+            )
+            await self.session.commit()
+            return True
+        except:
+            await self.session.rollback()
+            return False

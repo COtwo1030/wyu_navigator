@@ -93,9 +93,21 @@
         <!-- 路线按钮（单独展示，大小为交通按钮3倍+绿色） -->
         <view class="route-btn" bindtap="onRoute">路线</view>
       </view>
-    </view>
+  </view>
 
-    <!-- 路线信息 -->
-    <view class="route-info"><view class="info-text">{{routeInfo}}</view></view>
+  <!-- 路线信息 -->
+  <view class="route-info"><view class="info-text">{{routeInfo}}</view></view>
+  </view>
+  
+  <!-- 地点弹窗（复用地点页样式与结构） -->
+  <view wx:if="{{showModal}}" class="mask" bindtap="onCloseModal"></view>
+  <view wx:if="{{showModal}}" class="dialog" catchtap="noop">
+    <view class="dlg-name">{{modalItem.name}}</view>
+    <image wx:if="{{modalItem.img}}" class="dlg-cover" src="{{modalItem.img}}" mode="aspectFill" bindtap="onPreviewImage"></image>
+    <view class="dlg-desc">{{modalItem.desc}}</view>
+    <view class="dlg-actions">
+      <button class="dlg-btn" bindtap="onSetAsTo">设为终点</button>
+      <button class="dlg-btn primary" bindtap="onNavNow">一键导航</button>
+    </view>
   </view>
 </view>

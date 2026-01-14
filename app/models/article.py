@@ -49,8 +49,9 @@ class ArticleComment(Base):
     article_id : Mapped[int] = mapped_column(nullable=False) # 文章ID，非空
     parent_id : Mapped[int] = mapped_column(default=0) # 父评论ID，0为一级评论，大于0为二级评论（值为一级评论ID）
     content : Mapped[str] = mapped_column(String(200), nullable=False) # 评论内容，非空
+    img : Mapped[str] = mapped_column(String(500), nullable=True) # 评论图片URL，可空
     like_count : Mapped[int] = mapped_column(default=0) # 评论点赞次数，默认0
-    is_deleted : Mapped[bool] = mapped_column(default=False) # 是否删除，默认False
+    status : Mapped[int] = mapped_column(default=0)
     create_time : Mapped[datetime] = mapped_column(default=func.now()) # 创建时间，默认当前时间
     update_time : Mapped[datetime] = mapped_column(default=func.now(), onupdate=func.now()) # 更新时间，默认当前时间，更新时自动更新
     # 索引

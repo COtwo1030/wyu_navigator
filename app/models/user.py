@@ -1,5 +1,8 @@
+from re import S
 from sqlalchemy.orm import mapped_column, Mapped
-from sqlalchemy import DateTime, String
+
+from datetime import datetime
+from sqlalchemy import DateTime, String, func, Index
 
 from .base import Base
 
@@ -13,3 +16,44 @@ class UserDetail(Base):
     gender : Mapped[str] = mapped_column(String(10), nullable=False, default="") # 性别，默认空字符串
     avatar : Mapped[str] = mapped_column(String(200), nullable=False, default="") # 头像，默认空字符串
     create_time : Mapped[DateTime] = mapped_column(DateTime, nullable=False) # 创建时间，非空
+
+# 互动消息中心表（汇总所有用户收到的互动）
+class InteractiveMessage(Base):
+    __tablename__ = "interactive_messages"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, comment="消息ID")
+    # 被通知人ID（比如：谁的文章/评论收到了互动）
+    receiver_id: Mapped[int] = mapped_column(nullable=False, comment="消息接收用户ID")
+    # 被通知者的文章/评论内容
+    receiver_content: Mapped[str] = mapped_column(String(200), nullable=False, comment="被通知者的文章/评论内容")
+    # 被通知者的内容图片
+    receiver_img: Mapped[str] = mapped_column(String(200), nullable=True, comment="被通知者的内容图片")
+    # 互动发起者ID（比如：谁点的赞/谁评论的）
+    sender_id: Mapped[int] = mapped_column(nullable=False, comment="互动发起用户ID")
+    # 互动发起者用户名（冗余存储，避免联表查询）
+    sender_username: Mapped[str] = mapped_column(String(20), nullable=False, comment="发起者用户名")
+    # 互动发起者头像URL（冗余存储，避免联表查询）
+    sender_avatar: Mapped[str] = mapped_column(String(200), nullable=False, comment="发起者头像URL")
+    # 互动类型：1=文章被点赞 2=文章被评论 3=评论被点赞 4=评论被回复
+    interact_type: Mapped[int] = mapped_column(nullable=False, comment="互动类型：1-文章点赞 2-文章评论 3-评论点赞 4-评论回复")
+    # 关联的业务ID（根据interact_type对应不同表）：
+    # - 类型1：关联article_id；类型2：关联article_id；类型3：关联comment_id；类型4：关联parent_id（被回复的评论ID）
+    relate_id: Mapped[int] = mapped_column(nullable=False, comment="关联业务ID")
+    # 消息内容预览（冗余存储，避免联表）：
+    # - 类型1："XXX给你的文章点赞了"；类型2："XXX评论了你的文章：XXX"；类型3："XXX给你的评论点赞了"；类型4："XXX回复了你的评论：XXX"
+    sender_content: Mapped[str] = mapped_column(String(200), nullable=False, comment="发起者互动内容预览")
+    # 图片URL
+    sender_img: Mapped[str] = mapped_column(String(200), nullable=True, comment="发起者互动图片URL")
+    # 消息状态：0=未读 1=已读
+    is_read: Mapped[int] = mapped_column(default=0, comment="是否已读：0-未读 1-已读")
+    # 时间相关
+    create_time: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now(), comment="消息创建时间")
+    
+    # 索引优化（核心）
+    __table_args__ = (
+        # 核心索引：按「接收人+未读+时间」查询（消息中心默认排序）
+        Index("idx_receiver_unread_time", "receiver_id", "is_read", "create_time"),
+        # 辅助索引：按发起者查互动（比如“谁给我互动过”）
+        Index("idx_interactive_sender", "sender_id"),
+        # 辅助索引：按互动类型+关联ID（比如“某篇文章的所有互动”）
+        Index("idx_interact_relate", "interact_type", "relate_id"),
+    )

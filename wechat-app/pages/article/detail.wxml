@@ -41,6 +41,16 @@
       <text class="c-username">{{item.username}}</text>
     </view>
     <view class="c-content">{{item.content}}</view>
+    <block wx:if="{{item.imgs && item.imgs.length}}">
+      <view class="c-imgs">
+        <block wx:for="{{item.imgs}}" wx:key="*this" wx:for-item="img" wx:for-index="idx">
+          <view wx:if="{{idx < 3}}" class="c-img-wrap" catchtap="onPreviewCommentImageTap" data-urls="{{item.imgs}}" data-idx="{{idx}}">
+            <image class="c-img" src="{{img}}" mode="aspectFill" style="width: calc((100% - 16px) / 3); height: 80px; border-radius: 8px;"></image>
+            <view wx:if="{{idx === 2 && item.imgs.length > 3}}" class="c-more" style="position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,0.35);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;">+{{item.imgs.length - 3}}</view>
+          </view>
+        </block>
+      </view>
+    </block>
     <view class="c-meta">
       <text class="c-time">{{item.create_time}}</text>
       <text class="c-reply" bindtap="onReplyCommentTap" data-index="{{index}}" data-id="{{item.id}}" data-username="{{item.username}}">回复</text>
@@ -61,6 +71,16 @@
               <text class="r-username">{{child.username}}</text>
             </view>
             <view class="r-content"><text wx:if="{{child.parent_id > 0 && child.reply_to}}">回复 {{child.reply_to}}：</text>{{child.content}}</view>
+            <block wx:if="{{child.imgs && child.imgs.length}}">
+              <view class="r-imgs">
+                <block wx:for="{{child.imgs}}" wx:key="*this" wx:for-item="cimg" wx:for-index="cidx">
+                  <view wx:if="{{cidx < 3}}" class="c-img-wrap" catchtap="onPreviewCommentImageTap" data-urls="{{child.imgs}}" data-idx="{{cidx}}">
+                    <image class="c-img" src="{{cimg}}" mode="aspectFill" style="width: calc((100% - 16px) / 3); height: 80px; border-radius: 8px;"></image>
+                    <view wx:if="{{cidx === 2 && child.imgs.length > 3}}" class="c-more" style="position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,0.35);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;">+{{child.imgs.length - 3}}</view>
+                  </view>
+                </block>
+              </view>
+            </block>
             <view class="r-meta">
               <text class="r-time">{{child.create_time}}</text>
               <text class="r-reply" bindtap="onReplyCommentTap" data-parent-index="{{index}}" data-child-index="{{cidx}}" data-id="{{child.id}}" data-username="{{child.username}}">回复</text>
@@ -78,6 +98,7 @@
 </view>
 
 <view class="comment-bar">
-  <input class="comment-input" placeholder="{{commentPlaceholder}}" maxlength="200" value="{{commentText}}" bindinput="onCommentInput" bindconfirm="sendComment" focus="{{commentFocus}}" />
+  <input class="comment-input" placeholder="{{commentPlaceholder}}" maxlength="200" value="{{commentText}}" bindinput="onCommentInput" bindconfirm="sendComment" focus="{{commentFocus}}" bindfocus="onCommentFocus" bindblur="onCommentBlur" />
+  <image wx:if="{{commentFocus || commentText}}" class="upload-icon" src="/images/tabbar/upload.png" mode="aspectFit" bindtap="onUploadCommentImage" style="width: 20px; height: 20px; margin-left: 8px;"></image>
   <image class="like-icon" src="{{article.liked ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit" bindtap="onLikeTap"></image>
 </view>

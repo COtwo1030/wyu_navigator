@@ -1,0 +1,20 @@
+<navigation-bar title="{{'消息中心'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<view class="container">
+  <block wx:for="{{items}}" wx:key="index">
+    <view class="notif-item">
+      <image class="avatar" src="{{item.sender_avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
+      <view class="body">
+        <view class="header">
+          <text class="username">{{item.sender_username || ''}}</text>
+        </view>
+        <view class="content-box">{{item.content || item.sender_content || '内容不可用'}}</view>
+        <image wx:if="{{item.sender_img}}" class="inline-thumb" src="{{item.sender_img}}" mode="aspectFill"></image>
+        <view class="time">{{item.create_time || ''}}</view>
+      </view>
+      <view class="right">
+        <image wx:if="{{item.receiver_img}}" class="thumb" src="{{item.receiver_img}}" mode="aspectFill"></image>
+        <view wx:else class="thumb text">{{item.receiver_content || item.reciecer_content || '内容不可用'}}</view>
+      </view>
+    </view>
+  </block>
+</view>

@@ -34,6 +34,9 @@ Page({
     showToSuggestions: false,
     routeMode: 'walking'
   },
+  // 弹窗相关
+  showModal: false,
+  modalItem: null,
   onShow() {
     let pending = null
     try { pending = wx.getStorageSync('pendingTo') } catch (e) {}
@@ -165,10 +168,51 @@ Page({
   onMarkerTap(e) {
     if (!e?.detail?.markerId) return; // 空值保护
     const id = e.detail.markerId;
-    const item = (this.data.pointsMeta || []).find(p => p.id === id);
-    if (item) {
-      wx.showToast({ title: item.name || '未知点位', icon: 'none' });
-    }
+    const raw = (this.data.pointsMeta || []).find(p => p.id === id);
+    if (!raw) return;
+    const it = {
+      id: raw.id,
+      name: raw.name || '未知点位',
+      img: this.normalizeImg && this.normalizeImg(raw.img),
+      latitude: Number(raw.y),
+      longitude: Number(raw.x),
+      desc: String(raw.description || '')
+    };
+    this.setData({ showModal: true, modalItem: it });
+  },
+  normalizeImg(url) {
+    const s = String(url || '').trim();
+    return s ? s : '';
+  },
+  onPreviewImage() {
+    const url = (this.data.modalItem && this.data.modalItem.img) || ''
+    if (!url) return
+    wx.previewImage({ current: url, urls: [url] })
+  },
+  noop() {},
+  onCloseModal() {
+    this.setData({ showModal: false, modalItem: null })
+  },
+  onSetAsTo() {
+    const it = this.data.modalItem
+    if (!it) return
+    this.setData({
+      toLabel: it.name,
+      searchToText: it.name,
+      toCoord: { latitude: Number(it.latitude), longitude: Number(it.longitude) },
+      showModal: false
+    })
+  },
+  onNavNow() {
+    const it = this.data.modalItem
+    if (!it) return
+    this.setData({
+      toLabel: it.name,
+      searchToText: it.name,
+      toCoord: { latitude: Number(it.latitude), longitude: Number(it.longitude) },
+      showModal: false
+    })
+    this.onRoute()
   },
 
   // 开关底图POI（补充注释）

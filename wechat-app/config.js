@@ -12,7 +12,7 @@
  * - map.behavior.fitAllPointsOnLoad：是否在进入页面时自动缩放以包含全部点位
  */
 const BASE = 'http://127.0.0.1:8000'
-//const BASE = 'http://10.107.233.240:8000'
+//const BASE = 'http://203.195.240.87:80'
 const config = {
   // 后端接口配置
   api: {
@@ -31,8 +31,9 @@ const config = {
       create: `${BASE}/article/create`,
       page: `${BASE}/article/page`,
       view: `${BASE}/article/view`,
-      comment: `${BASE}/article/comment`,
       comments: `${BASE}/article/comments`,
+      commentPath: (id) => `${BASE}/article/${id}/comments`,
+      commentDelete: `${BASE}/article/comment/delete`,
       delete: `${BASE}/article/delete`,
       like: `${BASE}/article/like`,
       commentLike: `${BASE}/article/comment/like`,
@@ -47,6 +48,11 @@ const config = {
       info: `${BASE}/user/info`,
       detail: `${BASE}/user/detail`,
       avatar: `${BASE}/user/avatar`,
+      notifyCounts: `${BASE}/user/notify-counts`,
+      notifySeen: `${BASE}/user/notify-seen`,
+      notifications: `${BASE}/user/notifications`,
+      interactsUnread: `${BASE}/user/interacts/unread`,
+      readInteract: `${BASE}/user/read_interact`,
     },
     // 腾讯地图服务配置
     tencent: {

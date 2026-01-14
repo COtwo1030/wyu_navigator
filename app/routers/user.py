@@ -25,6 +25,22 @@ async def upload_user_detail(
 ):
     return await UserService(session).upload_user_detail(user_id, user_detail)
 
+# 查询用户未读数量和互动记录（未读）
+@router.get(f"/interacts/unread", status_code=200, description="查询用户未读数量和互动记录（未读）")
+async def get_user_interact(
+    user_id: int = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+):
+    return await UserService(session).get_user_interact(user_id, is_read=0)
+
+# 阅读用户互动记录
+@router.post("/read_interact", status_code=200, description="阅读用户互动记录")
+async def read_user_interact(
+    user_id: int = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+):
+    return await UserService(session).read_user_interact(user_id)
+
 # 查询用户信息
 @router.get("/info", status_code=200, description="查询用户信息")
 async def get_user_info(

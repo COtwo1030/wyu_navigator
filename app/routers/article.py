@@ -34,13 +34,23 @@ async def get_articles_by_page(
     return await ArticleService(session).get_by_page(page)
 
 # 文章评论
-@router.post("/comment", status_code=200,description="文章评论")
+@router.post("/{article_id}/comments", status_code=201,description="文章评论")
 async def comment_article(
+    article_id: int,
     data: ArticleCommentData,
     session: AsyncSession = Depends(get_session),
     user_id: int = Depends(get_current_user_id), # token不放参数更安全
 ):
-    return await ArticleService(session).comment(data, user_id)
+    return await ArticleService(session).comment(article_id, data, user_id)
+
+# 删除文章评论
+@router.delete("/comment/delete", status_code=200,description="删除文章评论")
+async def delete_comment(
+    comment_id: int = Body(..., embed=True),
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).delete_comment(comment_id, user_id)
 
 # 按时间顺序获取文章评论
 @router.get("/comments", status_code=200,description="按时间顺序获取文章评论（一页5条）")

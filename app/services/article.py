@@ -6,6 +6,7 @@ from app.crud.article import ArticleCRUD
 from app.crud.auth import AuthCRUD
 from app.crud.user import UserCRUD
 from app.schemas.article import ArticleData, ArticleCommentData
+from app.schemas.user import InteractData
 from app.models.auth import User
 from app.models.article import ArticleComment
 
@@ -75,30 +76,78 @@ class ArticleService:
         ]
     
     # 增加文章评论
-    async def comment(self, data: ArticleCommentData, user_id: int) -> ArticleComment:
+    async def comment(self, article_id: int, data: ArticleCommentData, user_id: int) -> ArticleComment:
         """
         增加文章评论内容
         参数:
+            article_id: 文章ID
             data: 文章评论数据
             user_id: 从 token 解析出的用户ID
         返回:
             ArticleComment: 评论模型
         """
-        # 判断文章是否存在
-        if not await ArticleCRUD(self.session).check_exists(data.article_id):
-            raise ValueError("文章不存在")
+        # 增加评论计数
+        await ArticleCRUD(self.session).increment_comment_count(article_id)
+        # 生成互动消息
+        # 获取文章作者ID
+        article_user_id = await ArticleCRUD(self.session).get_user_id(article_id)
+        # 获取文章内容，图片
+        article = await ArticleCRUD(self.session).get_content_img(article_id)
+        article_content = article["content"]
+        article_img = article["img"]
+        # 获取评论用户的昵称，头像
+        comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
+        comment_user_username = comment_user["username"]
+        comment_user_avatar = comment_user["avatar"]
+        # 互动类型（文章评论2/评论回复4）
+        interact_type = 2 if data.parent_id == 0 else 4
+        # 关联业务id
+        interact_id = article_id
+        # 互动消息内容
+        content = data.content
+        # 图片URL（只获取评论时的第一张图片）
+        img = data.img.split(',')[0] if data.img else ""
+        # 互动消息数据
+        interact_data = InteractData(
+            receiver_id=article_user_id,
+            receiver_content=article_content,
+            receiver_img=article_img,
+            sender_id=user_id,
+            sender_username=comment_user_username,
+            sender_avatar=comment_user_avatar,
+            interact_type=interact_type,
+            relate_id=interact_id,
+            content=content,
+            img=img
+        )
+        print(interact_data)
+        # 增加互动消息
+        success = await UserCRUD(self.session).create_interact(interact_data)
+        if not success:
+            logger.warning("创建互动消息失败，但继续创建评论")
+        # 增加评论
+        logger.info(f"用户 {user_id} 评论文章 {article_id}，父评论ID {data.parent_id}，内容 {data.content}")
+        return await ArticleCRUD(self.session).comment(article_id, data, user_id)
+    
+    # 删除文章评论
+    async def delete_comment(self, comment_id: int, user_id: int) -> bool:
+        """
+        删除文章评论
+        参数:
+            comment_id: 评论ID
+            user_id: 从 token 解析出的用户ID
+        返回:
+            bool: 是否删除成功
+        """
+        # 判断评论是否存在
+        if not await ArticleCRUD(self.session).check_comment_exists(comment_id):
+            raise ValueError("评论不存在")
         # 判断用户是否存在
         if not await AuthCRUD(self.session).check_exists(user_id):
             raise ValueError("用户不存在")
-        # 判断父评论是否存在（如果不是一级评论）
-        if data.parent_id != 0 and not await ArticleCRUD(self.session).check_parent_exists(data.parent_id):
-            raise ValueError("父评论不存在")
-        # 增加评论计数
-        await ArticleCRUD(self.session).increment_comment_count(data.article_id)
-        # 增加评论
-        logger.info(f"用户 {user_id} 评论文章 {data.article_id}，父评论ID {data.parent_id}，内容 {data.content}")
-        return await ArticleCRUD(self.session).comment(data, user_id)
-    
+        # 删除评论（status=0）
+        return await ArticleCRUD(self.session).delete_comment(comment_id, user_id)
+
     # 按时间顺序获取文章评论
     async def get_comments(self, article_id: int, page: int = 1) -> list[ArticleComment]:
         """
@@ -127,6 +176,7 @@ class ArticleService:
                 "content": c.content,
                 "create_time": c.create_time.strftime("%Y-%m-%d %H:%M"),
                 "like_count": c.like_count,
+                "img": c.img or ""
             }
             for c in comments
         ]
@@ -233,9 +283,6 @@ class ArticleService:
         返回:
             dict: {"view_count": int}
         """
-        # 判断文章是否存在
-        if not await ArticleCRUD(self.session).check_exists(article_id):
-            raise ValueError("文章不存在")
         # 判断用户是否存在（匿名用户用0表示，跳过校验）
         if user_id != 0:
             if not await AuthCRUD(self.session).check_exists(user_id):

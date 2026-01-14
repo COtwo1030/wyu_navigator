@@ -2,6 +2,10 @@
 <view class="home">
 
   <view class="content">
+    <view class="notify-btn" wx:if="{{loggedIn}}" bindtap="onNotifyTap">
+      <image class="notify-icon" src="/images/tabbar/message.png" mode="aspectFit"></image>
+      <view class="badge" wx:if="{{totalNotifyCount>0}}">{{totalNotifyCount}}</view>
+    </view>
     <view class="profile">
       <image class="avatar" src="{{avatarSrc}}" mode="aspectFill" bindtap="onAvatarTap"></image>
       <view class="info">

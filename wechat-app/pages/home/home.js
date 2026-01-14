@@ -13,7 +13,10 @@ Page({
     formGender: '',
     formYear: '',
     formUsername: '',
-    yearOptions: []
+    yearOptions: [],
+    receivedLikeCount: 0,
+    receivedCommentCount: 0,
+    totalNotifyCount: 0
   },
   onAvatarTap() {
     const token = wx.getStorageSync('token') || ''
@@ -135,6 +138,26 @@ Page({
           year,
           yearText
         })
+        wx.request({
+          url: config.api.user.interactsUnread,
+          method: 'GET',
+          header: { Authorization: `Bearer ${token}` },
+          success: (r) => {
+            const data = r.data || {}
+            let count = 0
+            if (Array.isArray(data)) {
+              count = Array.isArray(data[1]) && typeof data[0] === 'number' ? Number(data[0]) : data.length
+            } else {
+              count = Number(data.unread_count || data.count || data.total || 0)
+            }
+            this.setData({ totalNotifyCount: count })
+            if (count > 0) {
+              wx.setTabBarBadge({ index: 4, text: String(Math.min(count, 99)) })
+            } else {
+              try { wx.removeTabBarBadge({ index: 4 }) } catch (e) {}
+            }
+          }
+        })
       },
       fail: () => {
         this.setData({
@@ -171,6 +194,10 @@ Page({
   navToLogin() {
     wx.navigateTo({ url: '/pages/login/login' })
   },
+  onNotifyTap() {
+    if (!this.data.loggedIn) { this.navToLogin(); return }
+    wx.navigateTo({ url: '/pages/notifications/notifications' })
+  },
   onProfileActionTap() {
     if (!this.data.loggedIn) { this.navToLogin(); return }
     wx.showActionSheet({
@@ -202,6 +229,8 @@ Page({
       formYear: ''
     })
     wx.showToast({ title: '已退出', icon: 'none' })
+    try { wx.removeTabBarBadge({ index: 4 }) } catch (e) {}
+    this.setData({ totalNotifyCount: 0 })
   },
   onEditProfile() {
     if (!this.data.loggedIn) { this.navToLogin(); return }

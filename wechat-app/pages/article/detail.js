@@ -1,7 +1,7 @@
 const config = require('../../config.js')
 
 Page({
-  data: { article: {}, comments: [], threads: [], commentText: '', commentFocus: false, liked: false, likedComments: {}, commentParentId: 0, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, targetCommentId: 0, targetCommentParentId: 0 },
+  data: { article: {}, comments: [], threads: [], commentText: '', commentFocus: false, liked: false, likedComments: {}, commentParentId: 0, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, targetCommentId: 0, targetCommentParentId: 0, commentImages: [] },
 
   onLoad(options) {
     const ec = this.getOpenerEventChannel && this.getOpenerEventChannel()
@@ -56,6 +56,13 @@ Page({
     const idx = Number(e.currentTarget.dataset.idx || 0)
     const urls = (this.data.article.imgs || [])
     if (!urls.length) return
+    const current = urls[Math.max(0, Math.min(idx, urls.length - 1))]
+    wx.previewImage({ urls, current })
+  },
+  onPreviewCommentImageTap(e) {
+    const idx = Number(e.currentTarget.dataset.idx || 0)
+    const urls = e.currentTarget.dataset.urls || []
+    if (!urls || !urls.length) return
     const current = urls[Math.max(0, Math.min(idx, urls.length - 1))]
     wx.previewImage({ urls, current })
   },
@@ -129,8 +136,13 @@ Page({
             rootChildrenMap[rootId].push(c)
           }
         }
+        for (let i = 0; i < merged.length; i++) {
+          const c = merged[i]
+          const imgs = String(c.img || '').split(',').map(s => s.trim()).filter(s => !!s)
+          c.imgs = imgs
+        }
         const top = merged.filter(c => Number(c.parent_id || 0) === 0)
-        const threads = top.map(c => ({ ...c, children: rootChildrenMap[c.id] || [], showReplies: false }))
+        const threads = top.map(c => ({ ...c, children: (rootChildrenMap[c.id] || []).map(child => ({ ...child, imgs: String(child.img || '').split(',').map(s => s.trim()).filter(s => !!s) })), showReplies: false }))
         const hasMore = incoming.length === 5
         this.setData({ comments: merged, threads, commentHasMore: hasMore })
         const token = wx.getStorageSync('token') || ''
@@ -193,6 +205,78 @@ Page({
   },
 
   onCommentInput(e) { this.setData({ commentText: e.detail.value }) },
+  onCommentFocus() { this.setData({ commentFocus: true }) },
+  onCommentBlur() { this.setData({ commentFocus: false }) },
+  onUploadCommentImage() {
+    const token = wx.getStorageSync('token') || ''
+    if (!token) { wx.showToast({ title: '请先登录', icon: 'none' }); wx.navigateTo({ url: '/pages/login/login' }); return }
+    wx.chooseImage({
+      count: 3,
+      sizeType: ['compressed'],
+      sourceType: ['album','camera'],
+      success: async (sel) => {
+        const paths = sel.tempFilePaths || []
+        if (!paths.length) return
+        wx.showLoading({ title: '上传中...' })
+        try {
+          for (let i = 0; i < paths.length; i++) {
+            const filePath = paths[i]
+            const ext = (filePath.match(/\.(jpg|jpeg|png)$/i) || [])[0] || '.jpg'
+            const ct = (/\.png$/i.test(ext)) ? 'image/png' : 'image/jpeg'
+            const key = `${Date.now()}_${Math.floor(Math.random()*100000)}${ext}`
+            const uploadUrl = await this.getUploadUrl(key, ct)
+            const fs = wx.getFileSystemManager()
+            const data = await new Promise((resolve, reject) => {
+              fs.readFile({
+                filePath,
+                success: (res) => resolve(res.data),
+                fail: reject
+              })
+            })
+            await new Promise((resolve, reject) => {
+              wx.request({
+                url: uploadUrl,
+                method: 'PUT',
+                header: { 'Content-Type': ct },
+                data,
+                success: (r) => {
+                  const code = r.statusCode
+                  if (code >= 200 && code < 300) resolve()
+                  else reject(new Error(`上传失败(${code})`))
+                },
+                fail: reject
+              })
+            })
+            const link = `https://wuyu.s3.bitiful.net/${key}`
+            const imgs = (this.data.commentImages || []).slice()
+            imgs.push(link)
+            this.setData({ commentImages: imgs })
+          }
+          wx.hideLoading()
+          wx.showToast({ title: '上传成功', icon: 'success' })
+        } catch (e) {
+          wx.hideLoading()
+          wx.showToast({ title: '上传失败', icon: 'none' })
+        }
+      }
+    })
+  },
+  getUploadUrl(key, contentType) {
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: `${config.api.storage.uploadUrl}?key=${encodeURIComponent(key)}&content_type=${encodeURIComponent(contentType)}`,
+        method: 'GET',
+        timeout: 10000,
+        success: (res) => {
+          const ok = res.statusCode === 200
+          const url = ok && res.data && res.data.url
+          if (!url) return reject(new Error('缺少上传URL'))
+          resolve(url)
+        },
+        fail: reject
+      })
+    })
+  },
 
   onLikeCommentTap(e) {
     const token = wx.getStorageSync('token') || ''
@@ -288,15 +372,15 @@ Page({
 
     const token = wx.getStorageSync('token') || ''
     wx.request({
-      url: `${config.api.article.comment}`,
+      url: config.api.article.commentPath(this.data.article.id),
       method: 'POST',
       header: { 'content-type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      data: { article_id: this.data.article.id, parent_id: this.data.commentParentId || 0, content },
+      data: { parent_id: this.data.commentParentId || 0, content, img: (this.data.commentImages || []).join(',') || null },
       success: (res) => {
         const { statusCode } = res
-        if (statusCode === 200) {
+        if (statusCode === 201) {
           wx.showToast({ title: '评论成功', icon: 'success' })
-          this.setData({ commentText: '', commentParentId: 0, commentPlaceholder: '我也来说一句' })
+          this.setData({ commentText: '', commentParentId: 0, commentPlaceholder: '我也来说一句', commentImages: [] })
           const a = this.data.article
           this.setData({ article: { ...a, comment_count: (a.comment_count || 0) + 1 } })
           this.setData({ commentPage: 1, commentHasMore: true, comments: [], threads: [] })

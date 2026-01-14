@@ -1,10 +1,22 @@
 <navigation-bar extClass="nav-default" title="{{'我的评价'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
 <view class="mycomments">
+  <view class="topbar">
+    <button class="nav-delete-btn" bindtap="toggleDeleteMode">删除</button>
+  </view>
+  <view class="toolbar" wx:if="{{deleteMode}}">
+    <button class="select-all-btn" bindtap="onSelectAllTap">{{selectAll ? '取消全选' : '全选'}}</button>
+  </view>
   <scroll-view scroll-y class="list">
     <block wx:for="{{comments}}" wx:key="id">
       <view class="card" bindtap="onCardTap" data-id="{{item.article_id}}" data-comment-id="{{item.id}}" data-parent-id="{{item.parent_id}}">
-        <view class="content">{{item.content}}</view>
+        <image wx:if="{{deleteMode}}" class="del-icon" src="{{selectedMap[item.id] ? '/images/tabbar/delete_active.png' : '/images/tabbar/delete.png'}}" mode="aspectFit" catchtap="onToggleSelectTap" data-id="{{item.id}}"></image>
+        <view class="card-body {{deleteMode ? 'shifted' : ''}}">
+          <view class="content">{{item.content}}</view>
+        </view>
       </view>
     </block>
   </scroll-view>
+  <view wx:if="{{deleteMode}}" class="delete-bar">
+    <button class="confirm-delete-btn" bindtap="onConfirmDeleteTap">确认删除</button>
+  </view>
 </view>

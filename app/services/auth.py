@@ -159,6 +159,7 @@ class EmailCodeService:
             MAIL_FROM_NAME=settings.MAIL_FROM_NAME,
             MAIL_STARTTLS=settings.MAIL_STARTTLS,
             MAIL_SSL_TLS=settings.MAIL_SSL_TLS,
+            VALIDATE_CERTS=settings.VALIDATE_CERTS,
         )
         fm = FastMail(mail_config)
         message = MessageSchema(

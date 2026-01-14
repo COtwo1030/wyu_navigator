@@ -1,10 +1,12 @@
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
+from datetime import datetime
 
 from app.crud.user import UserCRUD
 from app.crud.auth import AuthCRUD
 from app.schemas.user import UserDetailData
+from app.crud.article import ArticleCRUD
 
 # 用户服务类
 class UserService:
@@ -69,4 +71,29 @@ class UserService:
         user_info = await UserCRUD(self.session).get_user_info(user_id)
         logger.info(f"用户 {user_id} 查询信息: {user_info}")
         return user_info
-        
+    # 查询用户互动记录（未读）
+    async def get_user_interact(self, user_id: int, is_read: int = 0):
+        """
+        查询用户互动记录（未读）
+        参数:
+            user_id (int): 用户ID
+            is_read (int): 是否已读（0未读，1已读），默认0
+        返回:
+            dict: { unread_count: int, items: list[dict] }
+        """
+        interact_records = await UserCRUD(self.session).get_user_interact(user_id, is_read=is_read)
+        logger.info(f"用户 {user_id} 查询互动记录 is_read={is_read}: {interact_records}")
+        return { "unread_count": len(interact_records), "items": interact_records }
+    # 阅读用户互动记录
+    async def read_user_interact(self, user_id: int):
+        """
+        阅读用户互动记录
+        参数:
+            user_id (int): 用户ID
+        返回:
+            dict: 包含阅读成功消息的字典
+        """
+        # 阅读用户互动记录
+        await UserCRUD(self.session).read_user_interact(user_id)
+        logger.info(f"用户 {user_id} 阅读互动记录")
+        return {"message": "互动记录阅读成功"}

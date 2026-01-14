@@ -1,5 +1,6 @@
+import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select,func
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.article import Article, ArticleLike, ArticleComment, ArticleCommentLike, ArticleView
 from app.schemas.article import ArticleData, ArticleCommentData
@@ -69,32 +70,44 @@ class ArticleCRUD:
         stmt = select(Article).filter(Article.status == 0).order_by(Article.id.desc()).offset(offset).limit(limit)
         result = await self.session.execute(stmt)
         return result.scalars().all()
-
-    # 查询文章是否存在
-    async def check_exists(self, article_id: int) -> bool:
-        """
-        查询文章是否存在
-        参数:
-            article_id: 文章ID
-        返回:
-            bool: 是否存在
-        """
-        # 优化：用get方法更高效
-        article = await self.session.get(Article, article_id)
-        return article is not None
     
     # 查询评论是否存在
     async def check_comment_exists(self, comment_id: int) -> bool:
         """
-        查询评论是否存在
+        查询评论是否存在（status为0）
         参数:
             comment_id: 评论ID
         返回:
             bool: 是否存在
         """
         comment = await self.session.get(ArticleComment, comment_id)
-        return comment is not None
-
+        return comment is not None and comment.status == 0
+    # 删除评论
+    async def delete_comment(self, comment_id: int, user_id: int) -> bool:
+        """
+        删除评论（评论status设置为1）
+        参数:
+            comment_id: 评论ID
+            user_id: 发布用户ID
+        返回:
+            bool: 是否删除成功
+        """
+        try:
+            # 检查评论是否存在
+            comment = await self.session.get(ArticleComment, comment_id)
+            if not comment:
+                return False
+            # 检查用户是否有权限删除
+            if comment.user_id != user_id:
+                return False
+            # 删除评论
+            comment.status = 1
+            await self.session.commit()
+            return True
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise e
+    
     # 查询用户是否点赞了文章
     async def check_like(self, article_id: int, user_id: int) -> bool:
         """
@@ -207,17 +220,18 @@ class ArticleCRUD:
         return await self.session.get(ArticleComment, parent_id) is not None
 
     # 增加文章评论内容
-    async def comment(self, data: ArticleCommentData, user_id: int) -> ArticleComment:
+    async def comment(self, article_id: int, data: ArticleCommentData, user_id: int) -> ArticleComment:
         """
         直接增加文章评论内容
         参数:
+            article_id: 文章ID
             data: 文章评论数据
             user_id: 评论用户ID
         返回:
             ArticleComment: 新增的评论模型
         """
         try:
-            comment = ArticleComment(**data.model_dump(), user_id=user_id)
+            comment = ArticleComment(article_id=article_id, **data.model_dump(), user_id=user_id)
             self.session.add(comment)
             await self.session.commit()
             return comment
@@ -228,15 +242,19 @@ class ArticleCRUD:
     # 按时间顺序获取文章评论
     async def get_comments(self, article_id: int, offset: int = 0, limit: int = 5) -> list[ArticleComment]:
         """
-        按时间顺序获取文章评论
+        按时间顺序获取文章评论（status为0）
         参数:
             article_id: 文章ID
         返回:
             list[ArticleComment]: 评论列表
         """
-        stmt = select(ArticleComment).where(
-            ArticleComment.article_id == article_id
-        ).order_by(ArticleComment.id).offset(offset).limit(limit)
+        stmt = (
+            select(ArticleComment)
+            .where(ArticleComment.article_id == article_id, ArticleComment.status == 0)
+            .order_by(ArticleComment.id)
+            .offset(offset)
+            .limit(limit)
+        )
         result = await self.session.execute(stmt)
         return result.scalars().all()
     
@@ -429,6 +447,65 @@ class ArticleCRUD:
         返回:
             list[ArticleComment]: 评论列表
         """
-        stmt = select(ArticleComment).where(ArticleComment.user_id == user_id).order_by(ArticleComment.id.desc())
+        stmt = (
+            select(ArticleComment)
+            .where(ArticleComment.user_id == user_id, ArticleComment.status == 0)
+            .order_by(ArticleComment.id.desc())
+        )
         result = await self.session.execute(stmt)
         return result.scalars().all()
+    
+    # 查询用户文章收到的评论：返回 comment_id、content、点赞数、评论时间（自上次查看以来）
+    async def get_received_comments_since(self, author_user_id: int, last_seen: datetime) -> list[dict]:
+        stmt = (
+            select(ArticleComment.id, ArticleComment.content, func.count(ArticleCommentLike.id))
+            .join(Article, ArticleComment.article_id == Article.id)
+            .join(ArticleCommentLike, ArticleCommentLike.comment_id == ArticleComment.id, isouter=True)
+            .where(Article.user_id == author_user_id, ArticleComment.status == 0, ArticleComment.create_time > last_seen)
+            .group_by(ArticleComment.id, ArticleComment.content, ArticleComment.create_time)
+            .order_by(ArticleComment.id.desc())
+        )
+        result = await self.session.execute(stmt)
+        rows = result.all()
+        return [{"id": r[0], "content": r[1], "count": r[2] or 0, "create_time": r[3]} for r in rows]
+
+    # 收到的评论点赞按评论聚合：返回 comment_id、点赞数,点赞时间（自上次查看以来）
+    async def get_received_comment_likes_since(self, author_user_id: int, last_seen: datetime) -> list[dict]:
+        stmt = (
+            select(ArticleCommentLike.comment_id, func.count(ArticleCommentLike.id))
+            .join(ArticleComment, ArticleCommentLike.comment_id == ArticleComment.id)
+            .join(Article, ArticleComment.article_id == Article.id)
+            .where(Article.user_id == author_user_id, ArticleCommentLike.create_time > last_seen)
+            .group_by(ArticleCommentLike.comment_id, ArticleCommentLike.create_time)
+            .order_by(ArticleCommentLike.comment_id.desc())
+        )
+        result = await self.session.execute(stmt)
+        rows = result.all()
+        return [{"comment_id": r[0], "count": r[1] or 0, "create_time": r[2]} for r in rows]
+    # 获取作者id
+    async def get_user_id(self, article_id: int) -> int:
+        """
+        获取文章作者ID
+        参数:
+            article_id: 文章ID
+        返回:
+            int: 作者ID
+        """
+        result = await self.session.execute(
+            select(Article.user_id).filter(Article.id == article_id)
+        )
+        return result.scalar_one_or_none()
+    
+    # 获取文章内容、图片
+    async def get_content_img(self, article_id: int) -> dict:
+        """
+        获取文章内容、图片
+        参数:
+            article_id: 文章ID
+        返回:
+            dict: 文章内容、图片URL
+        """
+        result = await self.session.execute(
+            select(Article.content, Article.img).filter(Article.id == article_id)
+        )
+        return result.mappings().one_or_none()
