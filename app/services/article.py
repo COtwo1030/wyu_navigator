@@ -1,5 +1,4 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from loguru import logger
 
 from app.crud.article import ArticleCRUD
@@ -24,7 +23,13 @@ class ArticleService:
             文章模型
         """
         logger.info(f"用户 {user_id} 创建文章: {article}")
-        return await ArticleCRUD(self.session).create(article, user_id)
+        # 获取用户详情
+        user = await UserCRUD(self.session).get_user_info(user_id)
+        username = user.username
+        avatar = user.avatar
+        gender = user.gender
+        year = user.year
+        return await ArticleCRUD(self.session).create(article, user_id, username, avatar, gender, year)
     # 删除文章
     async def delete(self, article_id: int, user_id: int) -> bool:
         """
@@ -37,43 +42,19 @@ class ArticleService:
         """
         logger.info(f"用户 {user_id} 删除文章 {article_id}")
         return await ArticleCRUD(self.session).delete(article_id, user_id)
-    # 按时间顺序分页获取最新的文章（一页十条）
-    async def get_by_page(self, page: int = 1) -> list[dict]:
+    # 按时间倒序分页获取最新的文章（一页十条）
+    async def get_by_page(self, page: int = 1, page_size: int = 10) -> list[dict]:
         """
         业务层：计算分页参数，查询文章并补充用户名，返回列表
         参数:
             page: 页码，默认第一页
+            page_size: 每页数量，默认十条
         返回:
-            list[dict]
+            list[dict] 
         """
-        page_size = 5
-        offset = max(page - 1, 0) * page_size
-        logger.info(f"获取第 {page} 页最新的文章，offset={offset}, limit={page_size}")
-        articles = await ArticleCRUD(self.session).get_by_page(offset, page_size)
-        user_ids = list({a.user_id for a in articles})
-        id_to_user = {}
-        if user_ids:
-            for uid in user_ids:
-                info = await UserCRUD(self.session).get_user_info(uid)
-                if info:
-                    id_to_user[uid] = info
-        return [
-            {
-                "id": a.id,
-                "username": getattr(id_to_user.get(a.user_id), "username", "") or "",
-                "avatar": getattr(id_to_user.get(a.user_id), "avatar", "") or "",
-                "gender": getattr(id_to_user.get(a.user_id), "gender", "") or "",
-                "year": getattr(id_to_user.get(a.user_id), "year", "") or "",
-                "tag": a.tag or "",
-                "content": a.content,
-                "img": a.img or "",
-                "create_time": a.create_time.strftime("%Y-%m-%d %H:%M"),
-                "view_count": a.view_count,
-                "like_count": a.like_count,
-                "comment_count": a.comment_count
-            }
-            for a in articles
-        ]
+        articles = await ArticleCRUD(self.session).get_by_page(page, page_size)
+        logger.info(f"获取第 {page} 页，每页 {page_size} 条文章: {articles}")
+        return articles
     
     # 增加文章评论
     async def comment(self, article_id: int, data: ArticleCommentData, user_id: int) -> ArticleComment:
@@ -93,7 +74,7 @@ class ArticleService:
         article = await ArticleCRUD(self.session).get_userid_content_img_from_article(article_id)
         article_user_id = article["user_id"]
         article_content = article["content"]
-        article_img = article["img"]
+        article_img = article["img"].split(',')[0] # 只获取文章的第一张图片
         # 获取评论用户的昵称，头像
         comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
         comment_user_username = comment_user["username"]
@@ -205,7 +186,7 @@ class ArticleService:
             article = await ArticleCRUD(self.session).get_userid_content_img_from_article(article_id)
             article_user_id = article["user_id"]
             article_content = article["content"]
-            article_img = article["img"]
+            article_img = article["img"].split(',')[0] # 只获取文章的第一张图片
             # 获取评论用户的昵称，头像
             comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
             comment_user_username = comment_user["username"]

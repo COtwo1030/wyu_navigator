@@ -23,7 +23,7 @@ class InteractiveMessage(Base):
     # 被通知人ID（比如：谁的文章/评论收到了互动）
     receiver_id: Mapped[int] = mapped_column(nullable=False, comment="消息接收用户ID")
     # 被通知者的文章/评论内容
-    receiver_content: Mapped[str] = mapped_column(String(200), nullable=False, comment="被通知者的文章/评论内容")
+    receiver_content: Mapped[str] = mapped_column(String(5000), nullable=False, comment="被通知者的文章/评论内容")
     # 被通知者的内容图片
     receiver_img: Mapped[str] = mapped_column(String(200), nullable=True, comment="被通知者的内容图片")
     # 互动发起者ID（比如：谁点的赞/谁评论的）
@@ -39,7 +39,7 @@ class InteractiveMessage(Base):
     relate_id: Mapped[int] = mapped_column(nullable=False, comment="关联业务ID")
     # 消息内容预览（冗余存储，避免联表）：
     # - 类型1："XXX给你的文章点赞了"；类型2："XXX评论了你的文章：XXX"；类型3："XXX给你的评论点赞了"；类型4："XXX回复了你的评论：XXX"
-    sender_content: Mapped[str] = mapped_column(String(200), nullable=False, comment="发起者互动内容预览")
+    sender_content: Mapped[str] = mapped_column(String(5000), nullable=False, comment="发起者互动内容预览")
     # 图片URL
     sender_img: Mapped[str] = mapped_column(String(200), nullable=True, comment="发起者互动图片URL")
     # 消息状态：0=未读 1=已读

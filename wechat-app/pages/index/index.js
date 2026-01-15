@@ -4,7 +4,7 @@ Page({
     articles: [],
     displayArticles: [],
     page: 1,
-    pageSize: 5,
+    pageSize: 10,
     hasMore: true,
     loading: false,
     categories: ['全部','求助','闲置','跑腿'],

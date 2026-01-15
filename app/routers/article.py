@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, Header
+from fastapi import APIRouter, Depends, Body, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.article import ArticleData, ArticleCommentData
@@ -8,11 +8,11 @@ from app.dependencies import get_session, get_current_user_id
 router = APIRouter(prefix="/article",tags=["文章"])
 
 # 创建文章
-@router.post("/create", status_code=200,description="创建文章")
+@router.post("/create", status_code=201,description="创建文章")
 async def create_article(
     data: ArticleData,
     session: AsyncSession = Depends(get_session),
-    user_id: int = Depends(get_current_user_id), # token不放参数更安全
+    user_id: int = Depends(get_current_user_id),
 ):
     return await ArticleService(session).create(data, user_id)
 
@@ -25,13 +25,14 @@ async def delete_article(
 ):
     return await ArticleService(session).delete(article_id, user_id)
 
-# 按时间顺序分页获取最新的文章（一页十条）
-@router.get("/page", status_code=200,description="按时间顺序分页获取最新的文章（一页十条）")
+# 按时间倒序分页获取最新的文章
+@router.get("/page", status_code=200,description="按时间倒序分页获取最新的文章")
 async def get_articles_by_page(
-    page: int = 1,
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
     session: AsyncSession = Depends(get_session),
 ):
-    return await ArticleService(session).get_by_page(page)
+    return await ArticleService(session).get_by_page(page, page_size)
 
 # 文章评论
 @router.post("/{article_id}/comments", status_code=201,description="文章评论")

@@ -6,7 +6,7 @@
       <view wx:if="{{tag}}" class="selected-tag">{{tag}}</view>
     </view>
     <view class="textarea-wrap">
-      <textarea class="textarea" placeholder="请输入内容" value="{{content}}" auto-height="true" bindinput="onContentInput"></textarea>
+      <textarea class="textarea" placeholder="请输入内容" value="{{content}}" auto-height="true" bindinput="onContentInput" maxlength="5000"></textarea>
     </view>
     <view class="upload-grid">
       <block wx:for="{{images}}" wx:key="*this" wx:for-item="img">

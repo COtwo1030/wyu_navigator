@@ -11,19 +11,23 @@ class ArticleCRUD:
         self.session = session
 
     # 创建文章（异常处理+刷新模型）
-    async def create(self, article: ArticleData, user_id: int):
+    async def create(self, article: ArticleData, user_id: int, username: str, avatar: str, gender: str, year: str):
         """
         创建文章
         参数:
             article: 文章数据
             user_id: 发布用户ID
+            user_name: 发布用户名
+            user_avatar: 发布用户头像URL
+            gender: 发布用户性别
+            year: 发布用户年份
         返回:
             文章模型
         异常:
             数据库错误时回滚并抛出异常
         """
         try:
-            article_model = Article(**article.model_dump(), user_id=user_id)
+            article_model = Article(**article.model_dump(), user_id=user_id, username=username, avatar=avatar, gender=gender, year=year)
             self.session.add(article_model)
             await self.session.commit()
             await self.session.refresh(article_model)  # 刷新获取完整模型（含ID/创建时间）
@@ -58,18 +62,41 @@ class ArticleCRUD:
             raise e
 
     # 按时间顺序分页获取文章
-    async def get_by_page(self, offset: int, limit: int):
+    async def get_by_page(self, page: int, page_size: int) -> list[dict]:
         """
         按创建时间倒序分页查询文章（status为0）
         参数:
-            offset: 偏移量
-            limit: 每页数量
+            page: 页码
+            page_size: 每页数量
         返回:
-            文章模型列表
+            list[dict]: 文章模型列表（字典形式）
         """
-        stmt = select(Article).filter(Article.status == 0).order_by(Article.id.desc()).offset(offset).limit(limit)
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
+        result = await self.session.execute(
+            select(Article)
+            .filter(Article.status == 0)
+            .order_by(Article.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        articles = result.scalars().all()
+        return [
+            {
+                "id": article.id,
+                "user_id": article.user_id,
+                "username": article.username,
+                "avatar": article.avatar,
+                "gender": article.gender,
+                "year": article.year,
+                "tag": article.tag,
+                "content": article.content,
+                "img": article.img,
+                "view_count": article.view_count,
+                "like_count": article.like_count,
+                "comment_count": article.comment_count,
+                "create_time": article.create_time.strftime("%Y-%m-%d %H:%M"),
+            }
+            for article in articles
+        ]
     
     # 查询评论是否存在
     async def check_comment_exists(self, comment_id: int) -> bool:

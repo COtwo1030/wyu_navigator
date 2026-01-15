@@ -3,15 +3,17 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 from datetime import datetime
 
-
 # 文章表
 class Article(Base):
     __tablename__ = "articles"
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True) # 主键，自动递增
-    # 关联用户ID
     user_id : Mapped[int] = mapped_column(nullable=False) # 用户ID，非空
+    username : Mapped[str] = mapped_column(String(20), nullable=False) # 用户名，非空
+    avatar : Mapped[str] = mapped_column(String(200), nullable=False) # 文章作者头像URL，可空
+    gender : Mapped[str] = mapped_column(String(20), nullable=True) # 文章作者性别，可空
+    year : Mapped[str] = mapped_column(String(20), nullable=True) # 文章作者年份，可空
     tag : Mapped[str] = mapped_column(String(20), nullable=True) # 文章标签，可空
-    content : Mapped[str] = mapped_column(String(500), nullable=False) # 文章内容，非空
+    content : Mapped[str] = mapped_column(String(5000), nullable=False) # 文章内容，非空
     img : Mapped[str] = mapped_column(String(500), nullable=True) # 文章图片URL，可空
     view_count : Mapped[int] = mapped_column(default=0) # 文章阅读次数，默认0
     like_count : Mapped[int] = mapped_column(default=0) # 文章点赞次数，默认0
