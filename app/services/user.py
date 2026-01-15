@@ -71,34 +71,24 @@ class UserService:
         user_info = await UserCRUD(self.session).get_user_info(user_id)
         logger.info(f"用户 {user_id} 查询信息: {user_info}")
         return user_info
-    # 查询用户互动记录（未读）
-    async def get_user_unread_interact(self, user_id: int, status: int = 0):
+    # 按页数查询用户互动记录
+    async def get_user_interact(self, user_id: int, page: int, page_size: int):
         """
-        查询用户互动记录（未读）
+        按页数时间倒序查询用户互动记录
         参数:
             user_id (int): 用户ID
-            status (int): 互动记录状态（0未读，1已读），默认0
+            page (int): 页码
+            page_size (int): 每页数量
         返回:
-            dict: { unread_count: int, items: list[dict] }
+            list[dict]: 用户互动记录列表
         """
-        interact_records = await UserCRUD(self.session).get_user_interact(user_id, status=status)
-        logger.info(f"用户 {user_id} 查询互动记录 status={status}: {interact_records}")
-        return { "unread_count": len(interact_records), "items": interact_records }
-    # 查询用户互动记录（已读）
-    async def get_user_read_interact(self, user_id: int, status: int = 1):
-        """
-        查询用户互动记录（已读）
-        参数:
-            user_id (int): 用户ID
-            status (int): 互动记录状态（0未读，1已读），默认1
-        返回:
-            dict: { read_count: int, items: list[dict] }
-        """
-        interact_records = await UserCRUD(self.session).get_user_interact(user_id, status=status)
-        logger.info(f"用户 {user_id} 查询互动记录 status={status}: {interact_records}")
-        return { "read_count": len(interact_records), "items": interact_records }
+        # 查询用户互动记录
+        interacts = await UserCRUD(self.session).get_user_interact(user_id, page, page_size)
+        logger.info(f"用户 {user_id} 查询互动记录: {interacts}")
+        return interacts
+    
     # 阅读互动记录
-    async def read_user_interact(self, user_id: int):
+    async def read_user_interacts(self, user_id: int):
         """
         阅读用户互动记录
         参数:
@@ -110,3 +100,16 @@ class UserService:
         await UserCRUD(self.session).read_user_interact(user_id)
         logger.info(f"用户 {user_id} 阅读互动记录")
         return {"message": "互动记录阅读成功"}
+    # 查询未读互动记录数量
+    async def get_unread_interact_count(self, user_id: int):
+        """
+        查询用户未读互动记录数量
+        参数:
+            user_id (int): 用户ID
+        返回:
+            int: 未读互动记录数量
+        """
+        # 查询未读互动记录数量
+        count = await UserCRUD(self.session).get_unread_interact_count(user_id)
+        logger.info(f"用户 {user_id} 查询未读互动记录数量: {count}")
+        return count

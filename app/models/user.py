@@ -49,10 +49,8 @@ class InteractiveMessage(Base):
     
     # 索引优化（核心）
     __table_args__ = (
-        # 核心索引：按「接收人+未读+时间」查询（消息中心默认排序）
-        Index("idx_receiver_unread_time", "receiver_id", "status", "create_time"),
-        # 辅助索引：按发起者查互动（比如“谁给我互动过”）
-        Index("idx_interactive_sender", "sender_id"),
-        # 辅助索引：按互动类型+关联ID（比如“某篇文章的所有互动”）
-        Index("idx_interact_relate", "interact_type", "relate_id"),
+        # 核心索引：按接收人+状态查互动（比如“我收到的所有未读互动”）
+        Index("idx_receiver_status", "receiver_id", "status"),
+        # 辅助索引：按接收人查互动（比如“我收到的所有互动”）
+        Index("idx_receiver_time", "receiver_id", "create_time"),
     )

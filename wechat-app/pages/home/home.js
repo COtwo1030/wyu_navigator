@@ -138,25 +138,18 @@ Page({
           year,
           yearText
         })
+        const uid = Number(wx.getStorageSync('user_id') || 0)
         wx.request({
-          url: config.api.user.interactsUnread,
+          url: `${config.api.user.interactsUnreadCount(uid)}`,
           method: 'GET',
           header: { Authorization: `Bearer ${token}` },
-          success: (r) => {
-            const data = r.data || {}
-            let count = 0
-            if (Array.isArray(data)) {
-              count = Array.isArray(data[1]) && typeof data[0] === 'number' ? Number(data[0]) : data.length
-            } else {
-              count = Number(data.unread_count || data.count || data.total || 0)
-            }
-            this.setData({ totalNotifyCount: count })
-            if (count > 0) {
-              wx.setTabBarBadge({ index: 4, text: String(Math.min(count, 99)) })
-            } else {
-              try { wx.removeTabBarBadge({ index: 4 }) } catch (e) {}
-            }
-          }
+          success: (r2) => {
+            const n = Number(r2.data || 0)
+            this.setData({ totalNotifyCount: n })
+            if (n > 0) { wx.setTabBarBadge({ index: 4, text: String(Math.min(n, 99)) }) }
+            else { try { wx.removeTabBarBadge({ index: 4 }) } catch (e) {} }
+          },
+          fail: () => { try { wx.removeTabBarBadge({ index: 4 }) } catch (e) {} }
         })
       },
       fail: () => {

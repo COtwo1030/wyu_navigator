@@ -52,9 +52,9 @@ const config = {
       notifyCounts: `${BASE}/user/notify-counts`,
       notifySeen: `${BASE}/user/notify-seen`,
       notifications: `${BASE}/user/notifications`,
-      interactsUnread: `${BASE}/user/interacts/unread`,
-      interactsRead: `${BASE}/user/interacts/read`,
-      readInteract: `${BASE}/user/read_interact`,
+      interacts: (id) => `${BASE}/user/${id}/interacts`,
+      interactsUnreadCount: (id) => `${BASE}/user/${id}/interacts/unread_count`,
+      interactsStatus: (id) => `${BASE}/user/${id}/interacts/status`,
     },
     // 腾讯地图服务配置
     tencent: {

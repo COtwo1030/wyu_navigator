@@ -5,24 +5,25 @@ Page({
     items: [],
     commentArticleMap: {},
     mapReady: false,
-    navigating: false
+    navigating: false,
+    page: 1,
+    page_size: 10,
+    loading: false,
+    hasMore: true
   },
   onShow() {
     const token = wx.getStorageSync('token')
     if (!token) { wx.showToast({ title: '请先登录', icon: 'none' }); return }
-    this.setData({ navigating: false })
-
-    // 拉取未读列表用于展示（不自动清未读）
+    this.setData({ navigating: false, items: [], page: 1, hasMore: true, loading: true })
+    const uid = Number(wx.getStorageSync('user_id') || 0)
+    // 拉取交互列表（分页）
     wx.request({
-      url: config.api.user.interactsUnread,
+      url: `${config.api.user.interacts(uid)}?page=${this.data.page}&page_size=${this.data.page_size}`,
       method: 'GET',
       header: { Authorization: `Bearer ${token}` },
       success: (r) => {
-        const data = r.data || {}
-        const items = Array.isArray(data)
-          ? (Array.isArray(data[1]) ? data[1] : data)
-          : (Array.isArray(data.items) ? data.items : [])
-        const normalized = (Array.isArray(items) ? items : []).map(it => ({
+        const raw = Array.isArray(r.data) ? r.data : (Array.isArray(r.data.items) ? r.data.items : [])
+        const normalized = (Array.isArray(raw) ? raw : []).map(it => ({
           sender_username: it.sender_username || '',
           sender_avatar: it.sender_avatar || '/images/tabbar/avator.png',
           content: it.sender_content || it.content || '',
@@ -31,36 +32,11 @@ Page({
           receiver_content: it.receiver_content || it.reciecer_content || '',
           create_time: it.create_time || '',
           interact_type: Number(it.interact_type || 0),
-          relate_id: Number(it.relate_id || 0)
+          relate_id: Number(it.relate_id || 0),
+          status: (it.status === undefined || it.status === null) ? 1 : Number(it.status)
         }))
         const sorted = normalized.slice().sort((a, b) => (String(a.create_time) < String(b.create_time) ? 1 : -1))
-        this.setData({ items: sorted })
-        if (!sorted.length) {
-          wx.request({
-            url: config.api.user.interactsRead,
-            method: 'GET',
-            header: { Authorization: `Bearer ${token}` },
-            success: (rr) => {
-              const d2 = rr.data || {}
-              const items2 = Array.isArray(d2)
-                ? (Array.isArray(d2[1]) ? d2[1] : d2)
-                : (Array.isArray(d2.items) ? d2.items : [])
-              const normalized2 = (Array.isArray(items2) ? items2 : []).map(it => ({
-                sender_username: it.sender_username || '',
-                sender_avatar: it.sender_avatar || '/images/tabbar/avator.png',
-                content: it.sender_content || it.content || '',
-                sender_img: it.sender_img || '',
-                receiver_img: it.receiver_img || '',
-                receiver_content: it.receiver_content || it.reciecer_content || '',
-                create_time: it.create_time || '',
-                interact_type: Number(it.interact_type || 0),
-                relate_id: Number(it.relate_id || 0)
-              }))
-              const sorted2 = normalized2.slice().sort((a, b) => (String(a.create_time) < String(b.create_time) ? 1 : -1))
-              this.setData({ items: sorted2 })
-            }
-          })
-        }
+        this.setData({ items: sorted, loading: false, hasMore: normalized.length >= this.data.page_size })
         // 预拉取评论映射（comment_id -> article_id），用于类型3/4跳转
         wx.request({
           url: config.api.article.userCommentList,
@@ -78,7 +54,8 @@ Page({
             this.setData({ commentArticleMap: map, mapReady: true })
           }
         })
-      }
+      },
+      fail: () => { this.setData({ loading: false }); wx.showToast({ title: '网络错误', icon: 'none' }) }
     })
   },
   onItemTap(e) {
@@ -141,11 +118,43 @@ Page({
       return
     }
   },
+  onReachBottom() {
+    if (this.data.loading || !this.data.hasMore) return
+    const token = wx.getStorageSync('token') || ''
+    if (!token) return
+    const uid = Number(wx.getStorageSync('user_id') || 0)
+    const nextPage = this.data.page + 1
+    this.setData({ loading: true })
+    wx.request({
+      url: `${config.api.user.interacts(uid)}?page=${nextPage}&page_size=${this.data.page_size}`,
+      method: 'GET',
+      header: { Authorization: `Bearer ${token}` },
+      success: (r) => {
+        const raw = Array.isArray(r.data) ? r.data : (Array.isArray(r.data.items) ? r.data.items : [])
+        const normalized = (Array.isArray(raw) ? raw : []).map(it => ({
+          sender_username: it.sender_username || '',
+          sender_avatar: it.sender_avatar || '/images/tabbar/avator.png',
+          content: it.sender_content || it.content || '',
+          sender_img: it.sender_img || '',
+          receiver_img: it.receiver_img || '',
+          receiver_content: it.receiver_content || it.reciecer_content || '',
+          create_time: it.create_time || '',
+          interact_type: Number(it.interact_type || 0),
+          relate_id: Number(it.relate_id || 0),
+          status: (it.status === undefined || it.status === null) ? 1 : Number(it.status)
+        }))
+        const merged = (this.data.items || []).concat(normalized)
+        this.setData({ items: merged, page: nextPage, loading: false, hasMore: normalized.length >= this.data.page_size })
+      },
+      fail: () => { this.setData({ loading: false }) }
+    })
+  },
   onUnload() {
     const token = wx.getStorageSync('token')
     if (!token) return
+    const uid = Number(wx.getStorageSync('user_id') || 0)
     wx.request({
-      url: config.api.user.readInteract,
+      url: `${config.api.user.interactsStatus(uid)}`,
       method: 'POST',
       header: { Authorization: `Bearer ${token}` },
       success: () => { try { wx.removeTabBarBadge({ index: 4 }) } catch (e) {} }

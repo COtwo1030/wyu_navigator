@@ -1,8 +1,11 @@
 <navigation-bar title="{{'消息中心'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
 <view class="container">
   <block wx:for="{{items}}" wx:key="index">
-    <view class="notif-item" catchtap="onItemTap" data-index="{{index}}">
-      <image class="avatar" src="{{item.sender_avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
+    <view class="notif-item {{item.status == 0 ? 'unread' : ''}}" catchtap="onItemTap" data-index="{{index}}">
+      <view class="avatar-wrap">
+        <view wx:if="{{item.status == 0}}" class="unread-dot"></view>
+        <image class="avatar" src="{{item.sender_avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
+      </view>
       <view class="body">
         <view class="header">
           <text class="username">{{item.sender_username || ''}}</text>

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.models.user import UserDetail, InteractiveMessage
 from app.schemas.user import UserDetailData, UserData, InteractData, InteractData
@@ -132,19 +132,22 @@ class UserCRUD:
             await self.session.rollback()
             return False
     # 查询用户互动记录
-    async def get_user_interact(self, user_id: int, status: int = 0) -> list[dict]:
+    async def get_user_interact(self, user_id: int, page: int, page_size: int) -> list[dict]:
         """
-        查询用户互动记录
+        按页数时间倒序查询用户互动记录
         参数:
             user_id (int): 用户ID
-            is_read (int): 是否已读（0未读，1已读），默认0
+            page (int): 页码
+            page_size (int): 每页数量
         返回:
             list[dict]: 互动记录列表
         """
         result = await self.session.execute(
             select(InteractiveMessage)
-            .where(InteractiveMessage.receiver_id == user_id, InteractiveMessage.status == status)
+            .where(InteractiveMessage.receiver_id == user_id)
             .order_by(InteractiveMessage.create_time.desc())
+            .limit(page_size)
+            .offset((page - 1) * page_size)
         )
         records = result.scalars().all()
         return [
@@ -157,6 +160,7 @@ class UserCRUD:
                 "receiver_img": r.receiver_img,
                 "interact_type": r.interact_type,
                 "relate_id": r.relate_id,
+                "status": r.status,
                 "create_time": r.create_time.strftime("%Y-%m-%d %H:%M")
             }
             for r in records
@@ -164,7 +168,7 @@ class UserCRUD:
     # 阅读用户互动记录
     async def read_user_interact(self, user_id: int) -> bool:
         """
-        将所有互动记录的is_read字段设为1
+        将所有互动记录的status字段设为1
         参数:
             user_id (int): 用户ID
         返回:
@@ -182,3 +186,20 @@ class UserCRUD:
         except:
             await self.session.rollback()
             return False
+    # 查询用户未读互动记录数量
+    async def get_unread_interact_count(self, user_id: int) -> int:
+        """
+        查询用户未读互动记录数量
+        参数:
+            user_id (int): 用户ID
+        返回:
+            int: 未读互动记录数量
+        """
+        # 查询未读互动记录数量
+        result = await self.session.execute(
+            select(func.count(InteractiveMessage.id))
+            .where(InteractiveMessage.receiver_id == user_id)
+            .where(InteractiveMessage.status == 0)
+        )
+        count = result.scalar()
+        return count

@@ -25,21 +25,31 @@ async def upload_user_detail(
 ):
     return await UserService(session).upload_user_detail(user_id, user_detail)
 
-# 查询用户未读数量和互动记录（未读）
-@router.get(f"/interacts/unread", status_code=200, description="查询用户未读数量和互动记录（未读）")
+# 按页数查询用户互动记录
+@router.get("/{user_id}/interacts", status_code=200, description="按页数查询用户互动记录")
 async def get_user_interact(
     user_id: int = Depends(get_current_user_id),
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
     session: AsyncSession = Depends(get_session),
 ):
-    return await UserService(session).get_user_unread_interact(user_id, status=0)
+    return await UserService(session).get_user_interact(user_id, page, page_size)
 
-# 查询用户互动记录（已读）
-@router.get(f"/interacts/read", status_code=200, description="查询用户互动记录（已读）")
-async def get_read_user_interact(
+# 查询未读互动记录数量
+@router.get("/{user_id}/interacts/unread_count", status_code=200, description="查询未读互动记录数量")
+async def get_unread_interact_count(
     user_id: int = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_session),
 ):
-    return await UserService(session).get_user_read_interact(user_id, status=1)
+    return await UserService(session).get_unread_interact_count(user_id)
+
+# 标记用户互动记录为已读
+@router.post("/{user_id}/interacts/status", status_code=200, description="标记用户互动记录为已读")
+async def read_user_interacts(
+    user_id: int = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+):
+    return await UserService(session).read_user_interacts(user_id)
 
 # 阅读用户互动记录
 @router.post("/read_interact", status_code=200, description="阅读用户互动记录")
