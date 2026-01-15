@@ -1,4 +1,3 @@
-from re import S
 from sqlalchemy.orm import mapped_column, Mapped
 
 from datetime import datetime
@@ -44,14 +43,14 @@ class InteractiveMessage(Base):
     # 图片URL
     sender_img: Mapped[str] = mapped_column(String(200), nullable=True, comment="发起者互动图片URL")
     # 消息状态：0=未读 1=已读
-    is_read: Mapped[int] = mapped_column(default=0, comment="是否已读：0-未读 1-已读")
+    status: Mapped[int] = mapped_column(default=0, comment="消息状态：0-未读 1-已读")
     # 时间相关
     create_time: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now(), comment="消息创建时间")
     
     # 索引优化（核心）
     __table_args__ = (
         # 核心索引：按「接收人+未读+时间」查询（消息中心默认排序）
-        Index("idx_receiver_unread_time", "receiver_id", "is_read", "create_time"),
+        Index("idx_receiver_unread_time", "receiver_id", "status", "create_time"),
         # 辅助索引：按发起者查互动（比如“谁给我互动过”）
         Index("idx_interactive_sender", "sender_id"),
         # 辅助索引：按互动类型+关联ID（比如“某篇文章的所有互动”）

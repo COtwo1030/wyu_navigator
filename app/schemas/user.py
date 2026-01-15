@@ -39,6 +39,6 @@ class InteractData(BaseModel):
     # 关联业务id
     relate_id: Annotated[int, Field(description="关联业务ID")]
     # 互动消息内容
-    content: Annotated[str, Field(min_length=1, max_length=200, description="互动消息内容")]
+    sender_content: Annotated[str, Field(min_length=0, max_length=200, description="互动消息内容")]
     # 图片URL
-    img: Annotated[Optional[str], Field(description="互动消息图片")] = None
+    sender_img: Annotated[Optional[str], Field(description="互动消息图片")] = None

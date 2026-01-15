@@ -89,10 +89,9 @@ class ArticleService:
         # 增加评论计数
         await ArticleCRUD(self.session).increment_comment_count(article_id)
         # 生成互动消息
-        # 获取文章作者ID
-        article_user_id = await ArticleCRUD(self.session).get_user_id(article_id)
-        # 获取文章内容，图片
-        article = await ArticleCRUD(self.session).get_content_img(article_id)
+        # 获取文章作者id，内容，图片
+        article = await ArticleCRUD(self.session).get_userid_content_img_from_article(article_id)
+        article_user_id = article["user_id"]
         article_content = article["content"]
         article_img = article["img"]
         # 获取评论用户的昵称，头像
@@ -102,11 +101,11 @@ class ArticleService:
         # 互动类型（文章评论2/评论回复4）
         interact_type = 2 if data.parent_id == 0 else 4
         # 关联业务id
-        interact_id = article_id
+        relate_id = article_id if data.parent_id == 0 else data.parent_id
         # 互动消息内容
         content = data.content
         # 图片URL（只获取评论时的第一张图片）
-        img = data.img.split(',')[0] if data.img else ""
+        sender_img = data.img.split(',')[0] if data.img else ""
         # 互动消息数据
         interact_data = InteractData(
             receiver_id=article_user_id,
@@ -116,9 +115,9 @@ class ArticleService:
             sender_username=comment_user_username,
             sender_avatar=comment_user_avatar,
             interact_type=interact_type,
-            relate_id=interact_id,
-            content=content,
-            img=img
+            relate_id=relate_id,
+            sender_content=content,
+            sender_img=sender_img
         )
         print(interact_data)
         # 增加互动消息
@@ -191,12 +190,6 @@ class ArticleService:
         返回:
             dict: {"liked": bool}
         """
-        # 判断文章是否存在
-        if not await ArticleCRUD(self.session).check_exists(article_id):
-            raise ValueError("文章不存在")
-        # 判断用户是否存在
-        if not await AuthCRUD(self.session).check_exists(user_id):
-            raise ValueError("用户不存在")
         # 检查是否已点赞
         if await ArticleCRUD(self.session).check_like(article_id, user_id):
             await ArticleCRUD(self.session).decrement_like_count(article_id)
@@ -207,6 +200,33 @@ class ArticleService:
             await ArticleCRUD(self.session).increment_like_count(article_id)
             await ArticleCRUD(self.session).record_like(article_id, user_id)
             logger.info(f"用户 {user_id} 点赞文章 {article_id}")
+            # 生成互动消息
+            # 获取文章作者id，内容，图片
+            article = await ArticleCRUD(self.session).get_userid_content_img_from_article(article_id)
+            article_user_id = article["user_id"]
+            article_content = article["content"]
+            article_img = article["img"]
+            # 获取评论用户的昵称，头像
+            comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
+            comment_user_username = comment_user["username"]
+            comment_user_avatar = comment_user["avatar"]
+            # 互动类型（文章点赞1）
+            interact_type = 1
+            # 关联业务id
+            relate_id = article_id
+            # 互动消息内容
+            sender_content = "点赞了你的文章"
+            await UserCRUD(self.session).create_interact(InteractData(
+                receiver_id=article_user_id,
+                receiver_content=article_content,
+                receiver_img=article_img,
+                sender_id=user_id,
+                sender_username=comment_user_username,
+                sender_avatar=comment_user_avatar,
+                interact_type=interact_type,
+                relate_id=relate_id,
+                sender_content=sender_content
+            ))
             return {"liked": True}
     
     # 文章评论点赞/取消点赞
@@ -219,12 +239,6 @@ class ArticleService:
         返回:
             dict: {"liked": bool}
         """
-        # 判断评论是否存在
-        if not await ArticleCRUD(self.session).check_comment_exists(comment_id):
-            raise ValueError("评论不存在")
-        # 判断用户是否存在
-        if not await AuthCRUD(self.session).check_exists(user_id):
-            raise ValueError("用户不存在")
         # 检查是否已点赞
         if await ArticleCRUD(self.session).check_comment_like(comment_id, user_id):
             await ArticleCRUD(self.session).decrement_comment_like_count(comment_id)
@@ -235,6 +249,33 @@ class ArticleService:
             await ArticleCRUD(self.session).increment_comment_like_count(comment_id)
             await ArticleCRUD(self.session).record_comment_like(comment_id, user_id)
             logger.info(f"用户 {user_id} 点赞评论 {comment_id}")
+            # 生成互动消息
+            # 获取评论者id，内容，图片
+            comment = await ArticleCRUD(self.session).get_userid_content_img_from_comment(comment_id)
+            comment_user_id = comment["user_id"]
+            comment_content = comment["content"]
+            comment_img = comment["img"]
+            # 获取点赞用户的昵称，头像
+            comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
+            comment_user_username = comment_user["username"]
+            comment_user_avatar = comment_user["avatar"]
+            # 互动类型（评论点赞3）
+            interact_type = 3
+            # 关联业务id
+            relate_id = comment_id
+            # 互动消息内容
+            sender_content = "点赞了你的评论"
+            await UserCRUD(self.session).create_interact(InteractData(
+                receiver_id=comment_user_id,
+                receiver_content=comment_content,
+                receiver_img=comment_img,
+                sender_id=user_id,
+                sender_username=comment_user_username,
+                sender_avatar=comment_user_avatar,
+                interact_type=interact_type,
+                relate_id=relate_id,
+                sender_content=sender_content
+            ))
             return {"liked": True}
 
     # 查询用户点赞的文章id列表

@@ -33,7 +33,8 @@ Page({
       })
     } else if (options && options.id) {
       const id = Number(options.id)
-      this.setData({ article: { id }, liked: false, commentFocus: false, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: 0, targetCommentParentId: 0 })
+      const tcid = Number(options.comment_id || 0)
+      this.setData({ article: { id }, liked: false, commentFocus: false, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: tcid, targetCommentParentId: 0 })
       this.increaseView(id)
       const token = wx.getStorageSync('token') || ''
       if (token) {
@@ -49,6 +50,7 @@ Page({
           }
         })
       }
+      this.fetchArticleDetail(id)
       this.fetchComments(id)
     }
   },
@@ -86,6 +88,31 @@ Page({
         }
       }
     })
+  },
+
+  fetchArticleDetail(id) {
+    const setFrom = (item) => {
+      const gender = item.gender || ''
+      const year = item.year || ''
+      const genderIcon = item.genderIcon || (gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''))
+      const yearText = item.yearText || (year ? `${year}级` : '')
+      const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText, imgs: String(item.img || '').split(',').map(s => s.trim()).filter(s => !!s) }
+      const a = this.data.article || { id }
+      this.setData({ article: { ...a, ...enhanced } })
+    }
+    const tryPage = (p, max) => {
+      wx.request({
+        url: `${config.api.article.page}?page=${p}`,
+        method: 'GET',
+        success: (res) => {
+          const list = Array.isArray(res.data) ? res.data : (res.data.items || [])
+          const found = list.find(a => Number(a.id) === id)
+          if (found) { setFrom(found) }
+          else if (p < max && list.length) { tryPage(p + 1, max) }
+        }
+      })
+    }
+    tryPage(1, 10)
   },
 
   fetchComments(articleId) {
@@ -170,9 +197,12 @@ Page({
         }
         const tcid = Number(this.data.targetCommentId || 0)
         if (tcid > 0) {
-          const tpid = Number(this.data.targetCommentParentId || 0)
           const tds = (this.data.threads || []).slice()
-          if (tpid > 0) {
+          const topFound = tds.find(t => Number(t.id) === tcid)
+          if (topFound) {
+            wx.pageScrollTo({ selector: `#comment-${tcid}`, duration: 200 })
+            this.setData({ targetCommentId: 0 })
+          } else {
             let idx = -1
             for (let i = 0; i < tds.length; i++) {
               const children = tds[i].children || []
@@ -186,13 +216,7 @@ Page({
               tds[idx] = { ...c, showReplies: true }
               this.setData({ threads: tds })
               wx.pageScrollTo({ selector: `#reply-${tcid}`, duration: 200 })
-              this.setData({ targetCommentId: 0, targetCommentParentId: 0 })
-            }
-          } else {
-            const found = tds.find(t => Number(t.id) === tcid)
-            if (found) {
-              wx.pageScrollTo({ selector: `#comment-${tcid}`, duration: 200 })
-              this.setData({ targetCommentId: 0, targetCommentParentId: 0 })
+              this.setData({ targetCommentId: 0 })
             }
           }
         }

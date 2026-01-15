@@ -31,7 +31,15 @@ async def get_user_interact(
     user_id: int = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_session),
 ):
-    return await UserService(session).get_user_interact(user_id, is_read=0)
+    return await UserService(session).get_user_unread_interact(user_id, status=0)
+
+# 查询用户互动记录（已读）
+@router.get(f"/interacts/read", status_code=200, description="查询用户互动记录（已读）")
+async def get_read_user_interact(
+    user_id: int = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session),
+):
+    return await UserService(session).get_user_read_interact(user_id, status=1)
 
 # 阅读用户互动记录
 @router.post("/read_interact", status_code=200, description="阅读用户互动记录")

@@ -1,6 +1,6 @@
 import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select,func
+from sqlalchemy import select, func, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.article import Article, ArticleLike, ArticleComment, ArticleCommentLike, ArticleView
 from app.schemas.article import ArticleData, ArticleCommentData
@@ -166,17 +166,13 @@ class ArticleCRUD:
         返回:
             bool: 是否删除成功
         """
-        like_record = await self.session.scalar(
-            select(ArticleLike).where(
-                ArticleLike.article_id == article_id,
-                ArticleLike.user_id == user_id
-            )
+        stmt = delete(ArticleLike).where(
+            ArticleLike.article_id == article_id,
+            ArticleLike.user_id == user_id
         )
-        if like_record:
-            await self.session.delete(like_record)
-            await self.session.commit()
-            return True
-        return False
+        await self.session.execute(stmt)
+        await self.session.commit()
+        return True
 
     # 文章点赞数增加（移除独立commit，适配事务）
     async def increment_like_count(self, article_id: int):
@@ -496,16 +492,29 @@ class ArticleCRUD:
         )
         return result.scalar_one_or_none()
     
-    # 获取文章内容、图片
-    async def get_content_img(self, article_id: int) -> dict:
+    # 获取文章作者id、内容、图片
+    async def get_userid_content_img_from_article(self, article_id: int) -> dict:
         """
-        获取文章内容、图片
+        获取文章作者id、内容、图片
         参数:
             article_id: 文章ID
         返回:
-            dict: 文章内容、图片URL
+            dict: 文章作者id、内容、图片URL
         """
         result = await self.session.execute(
-            select(Article.content, Article.img).filter(Article.id == article_id)
+            select(Article.user_id, Article.content, Article.img).filter(Article.id == article_id)
+        )
+        return result.mappings().one_or_none()
+    # 获取评论者id、内容、图片
+    async def get_userid_content_img_from_comment(self, comment_id: int) -> dict:
+        """
+        获取评论者id、内容、图片
+        参数:
+            comment_id: 评论ID
+        返回:
+            dict: 评论者id、内容、图片URL
+        """
+        result = await self.session.execute(
+            select(ArticleComment.user_id, ArticleComment.content, ArticleComment.img).filter(ArticleComment.id == comment_id)
         )
         return result.mappings().one_or_none()

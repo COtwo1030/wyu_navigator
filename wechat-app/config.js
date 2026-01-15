@@ -42,6 +42,7 @@ const config = {
       likeIdList: `${BASE}/article/likeidlist`,
       commentLikedList: `${BASE}/article/comment/likelist`,
       user: `${BASE}/article/user`,
+      userCommentList: `${BASE}/article/user/commentlist`,
     },
     // 用户接口
     user: {
@@ -52,6 +53,7 @@ const config = {
       notifySeen: `${BASE}/user/notify-seen`,
       notifications: `${BASE}/user/notifications`,
       interactsUnread: `${BASE}/user/interacts/unread`,
+      interactsRead: `${BASE}/user/interacts/read`,
       readInteract: `${BASE}/user/read_interact`,
     },
     // 腾讯地图服务配置

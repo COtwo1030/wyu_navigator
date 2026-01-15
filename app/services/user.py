@@ -72,19 +72,32 @@ class UserService:
         logger.info(f"用户 {user_id} 查询信息: {user_info}")
         return user_info
     # 查询用户互动记录（未读）
-    async def get_user_interact(self, user_id: int, is_read: int = 0):
+    async def get_user_unread_interact(self, user_id: int, status: int = 0):
         """
         查询用户互动记录（未读）
         参数:
             user_id (int): 用户ID
-            is_read (int): 是否已读（0未读，1已读），默认0
+            status (int): 互动记录状态（0未读，1已读），默认0
         返回:
             dict: { unread_count: int, items: list[dict] }
         """
-        interact_records = await UserCRUD(self.session).get_user_interact(user_id, is_read=is_read)
-        logger.info(f"用户 {user_id} 查询互动记录 is_read={is_read}: {interact_records}")
+        interact_records = await UserCRUD(self.session).get_user_interact(user_id, status=status)
+        logger.info(f"用户 {user_id} 查询互动记录 status={status}: {interact_records}")
         return { "unread_count": len(interact_records), "items": interact_records }
-    # 阅读用户互动记录
+    # 查询用户互动记录（已读）
+    async def get_user_read_interact(self, user_id: int, status: int = 1):
+        """
+        查询用户互动记录（已读）
+        参数:
+            user_id (int): 用户ID
+            status (int): 互动记录状态（0未读，1已读），默认1
+        返回:
+            dict: { read_count: int, items: list[dict] }
+        """
+        interact_records = await UserCRUD(self.session).get_user_interact(user_id, status=status)
+        logger.info(f"用户 {user_id} 查询互动记录 status={status}: {interact_records}")
+        return { "read_count": len(interact_records), "items": interact_records }
+    # 阅读互动记录
     async def read_user_interact(self, user_id: int):
         """
         阅读用户互动记录

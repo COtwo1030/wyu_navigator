@@ -116,24 +116,23 @@ class UserCRUD:
             msg = InteractiveMessage(
                 receiver_id=data.receiver_id,
                 receiver_content=data.receiver_content,
-                receiver_img=data.receiver_img or "",
+                receiver_img=data.receiver_img,
                 sender_id=data.sender_id,
                 sender_username=data.sender_username,
                 sender_avatar=data.sender_avatar,
                 interact_type=data.interact_type,
                 relate_id=data.relate_id,
-                sender_content=data.content,
-                sender_img=data.img or ""
+                sender_content=data.sender_content,
+                sender_img=data.sender_img
             )
             self.session.add(msg)
             await self.session.commit()
             return True
         except Exception as e:
-            logger.error(f"创建互动消息失败: {e}")
             await self.session.rollback()
             return False
     # 查询用户互动记录
-    async def get_user_interact(self, user_id: int, is_read: int = 0) -> list[dict]:
+    async def get_user_interact(self, user_id: int, status: int = 0) -> list[dict]:
         """
         查询用户互动记录
         参数:
@@ -144,18 +143,20 @@ class UserCRUD:
         """
         result = await self.session.execute(
             select(InteractiveMessage)
-            .where(InteractiveMessage.receiver_id == user_id, InteractiveMessage.is_read == is_read)
+            .where(InteractiveMessage.receiver_id == user_id, InteractiveMessage.status == status)
             .order_by(InteractiveMessage.create_time.desc())
         )
         records = result.scalars().all()
         return [
             {
                 "sender_username": r.sender_username,
-                "sender_avatar": r.sender_avatar or "",
+                "sender_avatar": r.sender_avatar,
                 "sender_content": r.sender_content,
-                "sender_img": r.sender_img or "",
-                "receiver_content": r.receiver_content or "",
-                "receiver_img": r.receiver_img or "",
+                "sender_img": r.sender_img,
+                "receiver_content": r.receiver_content,
+                "receiver_img": r.receiver_img,
+                "interact_type": r.interact_type,
+                "relate_id": r.relate_id,
                 "create_time": r.create_time.strftime("%Y-%m-%d %H:%M")
             }
             for r in records
@@ -174,7 +175,7 @@ class UserCRUD:
             await self.session.execute(
                 InteractiveMessage.__table__.update()
                 .where(InteractiveMessage.receiver_id == user_id)
-                .values(is_read=1)
+                .values(status=1)
             )
             await self.session.commit()
             return True
