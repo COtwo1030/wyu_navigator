@@ -1,4 +1,5 @@
 import datetime
+from unittest import result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
 from sqlalchemy.exc import SQLAlchemyError
@@ -403,30 +404,36 @@ class ArticleCRUD:
             await self.session.delete(like_record)
             await self.session.commit()
     
-    # 查询用户点赞的文章id列表
+    # 查询用户点赞的文章id列表（按时间倒序）
     async def get_liked_articles(self, user_id: int) -> list[int]:
         """
-        查询用户点赞的文章id列表
+        查询用户点赞的文章id列表（按时间倒序）
         参数:
             user_id: 用户ID
         返回:
             list[int]: 文章id列表（Article.id）
         """
-        stmt = select(ArticleLike.article_id).where(ArticleLike.user_id == user_id)
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(
+            select(ArticleLike.article_id)
+            .where(ArticleLike.user_id == user_id)
+            .order_by(ArticleLike.create_time.desc())
+        )
         return [row[0] for row in result.all()]
     
-    # 查询用户点赞的评论
+    # 查询用户点赞的评论（按时间倒序）
     async def get_liked_comments(self, user_id: int) -> list[int]:
         """
-        查询用户点赞的评论id列表
+        查询用户点赞的评论id列表（按时间倒序）
         参数:
             user_id: 用户ID
         返回:
             list[int]: 评论id列表（Comment.id）
         """
-        stmt = select(ArticleCommentLike.comment_id).where(ArticleCommentLike.user_id == user_id)
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(
+            select(ArticleCommentLike.comment_id)
+            .where(ArticleCommentLike.user_id == user_id)
+            .order_by(ArticleCommentLike.create_time.desc())
+        )
         return [row[0] for row in result.all()]
     
     # 查询用户评论过的文章id列表
@@ -524,20 +531,39 @@ class ArticleCRUD:
         返回:
             list[Article]: 文章列表
         """
-        if not ids:
-            return []
-        stmt = select(Article).where(Article.id.in_(ids), Article.status == 0).order_by(Article.id.desc())
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
+        result = await self.session.execute(
+            select(Article)
+            .filter(Article.id.in_(ids), Article.status == 0)
+            .order_by(Article.id.desc())
+        )
+        articles = result.scalars().all()
+        return [
+            {
+                "id": article.id,
+                "user_id": article.user_id,
+                "username": article.username,
+                "avatar": article.avatar,
+                "gender": article.gender,
+                "year": article.year,
+                "tag": article.tag,
+                "content": article.content,
+                "img": article.img,
+                "view_count": article.view_count,
+                "like_count": article.like_count,
+                "comment_count": article.comment_count,
+                "create_time": article.create_time.strftime("%Y-%m-%d %H:%M"),
+            }
+            for article in articles
+        ]
 
     # 查询用户的评论
-    async def get_comments_by_user_id(self, user_id: int) -> list[ArticleComment]:
+    async def get_comments_by_user_id(self, user_id: int) -> list[dict]:
         """
-        查询用户的评论
+        查询互动表获取用户的评论
         参数:
             user_id: 用户ID
         返回:
-            list[ArticleComment]: 评论列表
+            list[dict]: 评论列表
         """
         stmt = (
             select(ArticleComment)
@@ -545,7 +571,20 @@ class ArticleCRUD:
             .order_by(ArticleComment.id.desc())
         )
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        comments = result.scalars().all()
+        return [
+            {
+                "id": comment.id,
+                "username": comment.username,
+                "avatar": comment.avatar,
+                "article_id": comment.article_id,
+                "parent_id": comment.parent_id,
+                "content": comment.content,
+                "img": comment.img,
+                "create_time": comment.create_time.strftime("%Y-%m-%d %H:%M"),
+            }
+            for comment in comments
+        ]
     
     # 查询用户文章收到的评论：返回 comment_id、content、点赞数、评论时间（自上次查看以来）
     async def get_received_comments_since(self, author_user_id: int, last_seen: datetime) -> list[dict]:

@@ -8,3 +8,20 @@ page { background: #fff; }
 .img-wrap { width: calc((100% - 16px) / 3); height: 72px; border-radius: 8px; overflow: hidden; position: relative; background: #eee; }
 .img-item { width: 100%; height: 100%; }
 .more-mask { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.35); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; }
+.header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: #eee; }
+.header-right { display: flex; flex-direction: column; flex: 1; }
+.top-row { display: flex; justify-content: space-between; align-items: center; }
+.username { font-weight: 600; color: #333; }
+.time { font-size: 12px; color: #999; }
+.meta { margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+.gender-icon { width: 16px; height: 16px; }
+.year-badge { height: 20px; line-height: 20px; padding: 0 8px; background: #e5e5e5; color: #333; border-radius: 10px; font-size: 12px; }
+.metrics { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.metrics-right { display: flex; gap: 16px; }
+.metric { display: flex; flex-direction: row; align-items: center; }
+.metric-icon { width: 18px; height: 18px; }
+.metric-num { margin-left: 6px; font-size: 12px; color: #666; }
+.footer { padding: 12px 0; display: flex; justify-content: center; align-items: center; }
+.loading { color: #999; font-size: 12px; }
+.nomore { color: #bbb; font-size: 12px; }

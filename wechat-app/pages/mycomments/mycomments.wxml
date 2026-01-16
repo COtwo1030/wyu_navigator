@@ -1,17 +1,36 @@
-<navigation-bar extClass="nav-default" title="{{'我的评价'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
+<navigation-bar extClass="nav-default" title="{{'我评论的'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
 <view class="mycomments">
   <view class="topbar">
-    <button class="nav-delete-btn" bindtap="toggleDeleteMode">删除</button>
+    <button class="nav-delete-btn" size="mini" bindtap="toggleDeleteMode">删除</button>
   </view>
   <view class="toolbar" wx:if="{{deleteMode}}">
-    <button class="select-all-btn" bindtap="onSelectAllTap">{{selectAll ? '取消全选' : '全选'}}</button>
+    <button class="select-all-btn" size="mini" bindtap="onSelectAllTap">{{selectAll ? '取消全选' : '全选'}}</button>
   </view>
   <scroll-view scroll-y class="list">
     <block wx:for="{{comments}}" wx:key="id">
       <view class="card" bindtap="onCardTap" data-id="{{item.article_id}}" data-comment-id="{{item.id}}" data-parent-id="{{item.parent_id}}">
         <image wx:if="{{deleteMode}}" class="del-icon" src="{{selectedMap[item.id] ? '/images/tabbar/delete_active.png' : '/images/tabbar/delete.png'}}" mode="aspectFit" catchtap="onToggleSelectTap" data-id="{{item.id}}"></image>
         <view class="card-body {{deleteMode ? 'shifted' : ''}}">
+          <view class="header">
+            <image class="avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+            <view class="header-right">
+              <view class="top-row">
+                <text class="username">{{item.username}}</text>
+                <text class="time">{{item.create_time}}</text>
+              </view>
+            </view>
+          </view>
           <view class="content">{{item.content}}</view>
+          <block wx:if="{{item.imgs && item.imgs.length}}">
+            <view class="imgs-grid">
+              <block wx:for="{{item.imgs}}" wx:key="*this" wx:for-item="img" wx:for-index="idx">
+                <view wx:if="{{idx < 3}}" class="img-wrap" catchtap="onPreviewImages" data-id="{{item.article_id}}" data-idx="{{idx}}">
+                  <image class="img-item" src="{{img}}" mode="aspectFill"></image>
+                  <view wx:if="{{idx === 2 && item.imgs.length > 3}}" class="more-mask">+{{item.imgs.length - 3}}</view>
+                </view>
+              </block>
+            </view>
+          </block>
         </view>
       </view>
     </block>

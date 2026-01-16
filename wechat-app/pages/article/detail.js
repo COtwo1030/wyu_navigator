@@ -1,7 +1,7 @@
 const config = require('../../config.js')
 
 Page({
-  data: { article: {}, comments: [], threads: [], commentText: '', commentFocus: false, liked: false, likedComments: {}, commentParentId: 0, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, targetCommentId: 0, targetCommentParentId: 0, commentImages: [] },
+  data: { article: {}, comments: [], threads: [], commentText: '', commentFocus: false, liked: false, likedComments: {}, commentParentId: 0, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, targetCommentId: 0, targetCommentParentId: 0, targetLoadTries: 0, commentImages: [] },
 
   onLoad(options) {
     const ec = this.getOpenerEventChannel && this.getOpenerEventChannel()
@@ -13,7 +13,7 @@ Page({
         const yearText = item.yearText || (year ? `${year}级` : '')
         const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText, imgs: String(item.img || '').split(',').map(s => s.trim()).filter(s => !!s) }
         const wantFocus = !!item.openComment
-        this.setData({ article: enhanced, liked: !!enhanced.liked, commentFocus: wantFocus, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: Number(item.targetCommentId || 0), targetCommentParentId: Number(item.targetCommentParentId || 0) })
+        this.setData({ article: enhanced, liked: !!enhanced.liked, commentFocus: wantFocus, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: Number(item.targetCommentId || 0), targetCommentParentId: Number(item.targetCommentParentId || 0), targetLoadTries: 0 })
         this.increaseView(item.id)
         this.checkLikeStatus(item.id)
         this.checkCommentStatus(item.id)
@@ -23,7 +23,7 @@ Page({
     } else if (options && options.id) {
       const id = Number(options.id)
       const tcid = Number(options.comment_id || 0)
-      this.setData({ article: { id }, liked: false, commentFocus: false, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: tcid, targetCommentParentId: 0 })
+      this.setData({ article: { id }, liked: false, commentFocus: false, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: tcid, targetCommentParentId: 0, targetLoadTries: 0 })
       this.increaseView(id)
       this.checkLikeStatus(id)
       this.checkCommentStatus(id)
@@ -221,6 +221,13 @@ Page({
               this.setData({ threads: tds })
               wx.pageScrollTo({ selector: `#reply-${tcid}`, duration: 200 })
               this.setData({ targetCommentId: 0 })
+            } else {
+              if (this.data.commentHasMore && (this.data.targetLoadTries || 0) < 20) {
+                this.setData({ commentPage: this.data.commentPage + 1, targetLoadTries: (this.data.targetLoadTries || 0) + 1 })
+                this.fetchComments(this.data.article.id)
+              } else {
+                this.setData({ targetCommentId: 0 })
+              }
             }
           }
         }

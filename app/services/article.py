@@ -259,27 +259,29 @@ class ArticleService:
             bool: 是否点赞过
         """
         return await ArticleCRUD(self.session).check_like(article_id, user_id)
-    # 查询用户点赞的文章id列表
+    # 查询用户点赞的文章id列表（按时间倒序）
     async def get_liked_articles(self, user_id: int) -> list[int]:
         """
-        查询用户点赞的文章id列表
+        查询用户点赞的文章id列表（按时间倒序）
         参数:
             user_id: 用户ID
         返回:
             list[int]: 文章id列表
         """
         articles = await ArticleCRUD(self.session).get_liked_articles(user_id)
+        logger.info(f"用户 {user_id} 点赞的文章id列表（按时间倒序）：{articles}")
         return articles
-    # 查询用户点赞的评论
+    # 查询用户点赞的评论（按时间倒序）
     async def get_liked_comments(self, user_id: int) -> list[ArticleComment]:
         """
-        查询用户点赞的评论id列表
+        查询用户点赞的评论id列表（按时间倒序）
         参数:
             user_id: 用户ID
         返回:
             list[ArticleComment]: 评论列表
         """
         comments = await ArticleCRUD(self.session).get_liked_comments(user_id)
+        logger.info(f"用户 {user_id} 点赞的评论（按时间倒序）：{comments}")
         return comments
     # 查询用户是否评论过文章
     async def check_comment(self, article_id: int, user_id: int) -> bool:
@@ -338,19 +340,20 @@ class ArticleService:
         return articles
     
     # 批量根据ID获取文章（返回精简字段）
-    async def get_articles_by_article_ids(self, ids: list[int]) -> list[dict]:
-        if not ids:
-            return []
+    async def get_articles_by_article_ids(self, page: int, page_size: int, ids: list[int]) -> list[dict]:
+        """
+        批量根据ID获取文章
+        参数:
+            page: 页码
+            page_size: 每页数量
+            ids: 文章ID列表
+        返回:
+            list[dict]
+        """
+        # 分页处理
+        ids = ids[(page-1)*page_size:page*page_size]
         articles = await ArticleCRUD(self.session).get_by_ids(ids)
-        return [
-            {
-                "id": a.id,
-                "tag": a.tag or "",
-                "content": a.content,
-                "img": a.img or ""
-            }
-            for a in articles
-        ]
+        return articles
     
     # 查询用户的评论
     async def get_comments_by_user_id(self, user_id: int) -> list[dict]:
@@ -362,13 +365,5 @@ class ArticleService:
             list[dict]: 评论列表
         """
         comments = await ArticleCRUD(self.session).get_comments_by_user_id(user_id)
-        return [
-            {
-                "id": c.id,
-                "article_id": c.article_id,
-                "parent_id": c.parent_id,
-                "content": c.content,
-                "create_time": c.create_time.strftime("%Y-%m-%d %H:%M")
-            }
-            for c in comments
-        ]
+        logger.info(f"用户 {user_id} 查询发表的评论")
+        return comments

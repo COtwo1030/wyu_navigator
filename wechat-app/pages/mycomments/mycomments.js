@@ -16,7 +16,11 @@ Page({
           id: c.id,
           article_id: c.article_id,
           parent_id: c.parent_id || 0,
-          content: c.content || ''
+          username: c.username || '',
+          avatar: c.avatar || '/images/tabbar/avator.png',
+          content: c.content || '',
+          imgs: String(c.img || '').split(',').map(s => s.trim()).filter(s => !!s),
+          create_time: c.create_time || ''
         }))
         this.setData({ comments: items, selectedMap: {}, selectAll: false })
       }
@@ -99,5 +103,15 @@ Page({
         next()
       }
     })
+  },
+  onPreviewImages(e) {
+    const aid = Number(e.currentTarget.dataset.id)
+    const idx = Number(e.currentTarget.dataset.idx || 0)
+    const list = this.data.comments || []
+    const item = list.find(c => Number(c.article_id) === aid) || {}
+    const urls = (item.imgs || [])
+    if (!urls.length) return
+    const current = urls[Math.max(0, Math.min(idx, urls.length - 1))]
+    wx.previewImage({ urls, current })
   }
 })
