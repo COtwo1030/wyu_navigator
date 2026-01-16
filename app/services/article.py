@@ -55,7 +55,17 @@ class ArticleService:
         articles = await ArticleCRUD(self.session).get_by_page(page, page_size)
         logger.info(f"获取第 {page} 页，每页 {page_size} 条文章: {articles}")
         return articles
-    
+    # 查询指定文章详情
+    async def get_by_articleid(self, article_id: int) -> dict:
+        """
+        查询指定文章详情
+        参数:
+            article_id: 文章ID
+        返回:
+            dict: 文章详情
+        """
+        logger.info(f"查询文章 {article_id} 详情")
+        return await ArticleCRUD(self.session).get_by_articleid(article_id)
     # 增加文章评论
     async def comment(self, article_id: int, data: ArticleCommentData, user_id: int) -> ArticleComment:
         """
@@ -106,9 +116,12 @@ class ArticleService:
         if not success:
             logger.warning("创建互动消息失败，但继续创建评论")
         # 增加评论
+        # 获取评论用户的昵称，头像
+        comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
+        comment_user_username = comment_user["username"]
+        comment_user_avatar = comment_user["avatar"]
         logger.info(f"用户 {user_id} 评论文章 {article_id}，父评论ID {data.parent_id}，内容 {data.content}")
-        return await ArticleCRUD(self.session).comment(article_id, data, user_id)
-    
+        return await ArticleCRUD(self.session).comment(article_id, data, user_id, comment_user_username, comment_user_avatar)
     # 删除文章评论
     async def delete_comment(self, comment_id: int, user_id: int) -> bool:
         """
@@ -127,40 +140,18 @@ class ArticleService:
             raise ValueError("用户不存在")
         # 删除评论（status=0）
         return await ArticleCRUD(self.session).delete_comment(comment_id, user_id)
-
-    # 按时间顺序获取文章评论
-    async def get_comments(self, article_id: int, page: int = 1) -> list[ArticleComment]:
+    # 按时间倒序分页获取文章评论
+    async def get_comments(self, article_id: int, page: int = 1, page_size: int = 5) -> list[ArticleComment]:
         """
-        按时间顺序获取文章评论
+        按时间倒序分页获取文章评论
         参数:
             article_id: 文章ID
         返回:
             list[ArticleComment]: 评论列表
         """
-        page_size = 5
-        offset = max(page - 1, 0) * page_size
-        comments = await ArticleCRUD(self.session).get_comments(article_id, offset, page_size)
-        user_ids = list({c.user_id for c in comments})
-        id_to_user = {}
-        if user_ids:
-            for uid in user_ids:
-                info = await UserCRUD(self.session).get_user_info(uid)
-                if info:
-                    id_to_user[uid] = info
-        return [
-            {
-                "id": c.id,
-                "username": getattr(id_to_user.get(c.user_id), "username", "") or "",
-                "avatar": getattr(id_to_user.get(c.user_id), "avatar", "") or "",
-                "parent_id": c.parent_id,
-                "content": c.content,
-                "create_time": c.create_time.strftime("%Y-%m-%d %H:%M"),
-                "like_count": c.like_count,
-                "img": c.img or ""
-            }
-            for c in comments
-        ]
-    
+        comments = await ArticleCRUD(self.session).get_comments(article_id, page, page_size)
+        logger.info(f"获取文章 {article_id} 第 {page} 页")
+        return comments
     # 文章点赞/取消点赞
     async def like(self, article_id: int, user_id: int) -> dict:
         """
@@ -209,7 +200,6 @@ class ArticleService:
                 sender_content=sender_content
             ))
             return {"liked": True}
-    
     # 文章评论点赞/取消点赞
     async def like_comment(self, comment_id: int, user_id: int) -> dict:
         """
@@ -258,7 +248,17 @@ class ArticleService:
                 sender_content=sender_content
             ))
             return {"liked": True}
-
+    # 查询用户是否点赞过文章
+    async def check_like(self, article_id: int, user_id: int) -> bool:
+        """
+        查询用户是否点赞过文章
+        参数:
+            article_id: 文章ID
+            user_id: 用户ID
+        返回:
+            bool: 是否点赞过
+        """
+        return await ArticleCRUD(self.session).check_like(article_id, user_id)
     # 查询用户点赞的文章id列表
     async def get_liked_articles(self, user_id: int) -> list[int]:
         """
@@ -270,7 +270,6 @@ class ArticleService:
         """
         articles = await ArticleCRUD(self.session).get_liked_articles(user_id)
         return articles
-
     # 查询用户点赞的评论
     async def get_liked_comments(self, user_id: int) -> list[ArticleComment]:
         """
@@ -282,7 +281,17 @@ class ArticleService:
         """
         comments = await ArticleCRUD(self.session).get_liked_comments(user_id)
         return comments
-
+    # 查询用户是否评论过文章
+    async def check_comment(self, article_id: int, user_id: int) -> bool:
+        """
+        查询用户是否评论过文章
+        参数:
+            article_id: 文章ID
+            user_id: 用户ID
+        返回:
+            bool: 是否评论过
+        """
+        return await ArticleCRUD(self.session).check_comment(article_id, user_id)
     # 查询用户评论过的文章id列表
     async def get_commented_articles(self, user_id: int) -> list[int]:
         """

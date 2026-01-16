@@ -60,7 +60,6 @@ class ArticleCRUD:
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise e
-
     # 按时间顺序分页获取文章
     async def get_by_page(self, page: int, page_size: int) -> list[dict]:
         """
@@ -97,7 +96,31 @@ class ArticleCRUD:
             }
             for article in articles
         ]
-    
+    # 查询指定文章详情
+    async def get_by_articleid(self, article_id: int) -> dict:
+        """
+        查询指定文章详情
+        参数:
+            article_id: 文章ID
+        返回:
+            dict: 文章详情
+        """
+        article = await self.session.get(Article, article_id)
+        return {
+            "id": article.id,
+            "user_id": article.user_id,
+            "username": article.username,
+            "avatar": article.avatar,
+            "gender": article.gender,
+            "year": article.year,
+            "tag": article.tag,
+            "content": article.content,
+            "img": article.img,
+            "view_count": article.view_count,
+            "like_count": article.like_count,
+            "comment_count": article.comment_count,
+            "create_time": article.create_time.strftime("%Y-%m-%d %H:%M"),
+        }
     # 查询评论是否存在
     async def check_comment_exists(self, comment_id: int) -> bool:
         """
@@ -134,7 +157,6 @@ class ArticleCRUD:
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise e
-    
     # 查询用户是否点赞了文章
     async def check_like(self, article_id: int, user_id: int) -> bool:
         """
@@ -151,7 +173,22 @@ class ArticleCRUD:
         )
         result = await self.session.execute(stmt)
         return result.scalars().first() is not None
-    
+    # 查询用户是否评论了文章
+    async def check_comment(self, article_id: int, user_id: int) -> bool:
+        """
+        查询用户是否评论了文章
+        参数:
+            article_id: 文章ID
+            user_id: 用户ID
+        返回:
+            bool: 是否评论了文章
+        """
+        stmt = select(ArticleComment).where(
+            ArticleComment.article_id == article_id,
+            ArticleComment.user_id == user_id
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first() is not None
     # 查询用户是否点赞了评论
     async def check_comment_like(self, comment_id: int, user_id: int) -> bool:
         """
@@ -168,7 +205,6 @@ class ArticleCRUD:
         )
         result = await self.session.execute(stmt)
         return result.scalars().first() is not None
-
     # 记录文章点赞记录（移除独立commit，交给上层控制事务）
     async def record_like(self, article_id: int, user_id: int) -> ArticleLike:
         """
@@ -183,7 +219,6 @@ class ArticleCRUD:
         self.session.add(like)
         await self.session.commit()
         return like
-    
     # 删除文章点赞记录（配合取消点赞）
     async def delete_like_record(self, article_id: int, user_id: int) -> bool:
         """
@@ -200,7 +235,6 @@ class ArticleCRUD:
         await self.session.execute(stmt)
         await self.session.commit()
         return True
-
     # 文章点赞数增加（移除独立commit，适配事务）
     async def increment_like_count(self, article_id: int):
         """
@@ -215,7 +249,6 @@ class ArticleCRUD:
             article.like_count += 1
             self.session.add(article)
         return article
-
     # 文章点赞数减少（移除独立commit+防负数）
     async def decrement_like_count(self, article_id: int):
         """
@@ -230,7 +263,6 @@ class ArticleCRUD:
             article.like_count = max(0, article.like_count - 1)  # 防止负数
             self.session.add(article)
         return article
-    
     # 检查父评论是否存在
     async def check_parent_exists(self, parent_id: int) -> bool:
         """
@@ -241,45 +273,59 @@ class ArticleCRUD:
             bool: 是否存在
         """
         return await self.session.get(ArticleComment, parent_id) is not None
-
     # 增加文章评论内容
-    async def comment(self, article_id: int, data: ArticleCommentData, user_id: int) -> ArticleComment:
+    async def comment(self, article_id: int, data: ArticleCommentData, user_id: int, username: str, avatar: str) -> ArticleComment:
         """
         直接增加文章评论内容
         参数:
             article_id: 文章ID
             data: 文章评论数据
             user_id: 评论用户ID
+            username: 评论用户昵称
+            avatar: 评论用户头像
         返回:
             ArticleComment: 新增的评论模型
         """
         try:
-            comment = ArticleComment(article_id=article_id, **data.model_dump(), user_id=user_id)
+            comment = ArticleComment(article_id=article_id, **data.model_dump(), user_id=user_id, username=username, avatar=avatar)
             self.session.add(comment)
             await self.session.commit()
             return comment
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise e
-    
-    # 按时间顺序获取文章评论
-    async def get_comments(self, article_id: int, offset: int = 0, limit: int = 5) -> list[ArticleComment]:
+    # 按时间顺序分页获取文章评论
+    async def get_comments(self, article_id: int, page: int = 1, page_size: int = 5) -> list[dict]:
         """
-        按时间顺序获取文章评论（status为0）
+        按时间顺序分页获取文章评论（status为0）
         参数:
             article_id: 文章ID
         返回:
-            list[ArticleComment]: 评论列表
+            list[dict]: 评论列表
         """
+        offset = max(page - 1, 0) * page_size
         stmt = (
             select(ArticleComment)
             .where(ArticleComment.article_id == article_id, ArticleComment.status == 0)
             .order_by(ArticleComment.id)
             .offset(offset)
-            .limit(limit)
+            .limit(page_size)
         )
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        comments = result.scalars().all()
+        return [
+            {
+                "id": c.id,
+                "username": c.username,
+                "avatar": c.avatar,
+                "parent_id": c.parent_id,
+                "content": c.content,
+                "create_time": c.create_time.strftime("%Y-%m-%d %H:%M"),
+                "like_count": c.like_count,
+                "img": c.img or ""
+            }
+            for c in comments
+        ]
     
     # 增加评论计数
     async def increment_comment_count(self, article_id: int):

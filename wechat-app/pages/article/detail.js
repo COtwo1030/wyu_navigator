@@ -15,20 +15,9 @@ Page({
         const wantFocus = !!item.openComment
         this.setData({ article: enhanced, liked: !!enhanced.liked, commentFocus: wantFocus, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: Number(item.targetCommentId || 0), targetCommentParentId: Number(item.targetCommentParentId || 0) })
         this.increaseView(item.id)
-        const token = wx.getStorageSync('token') || ''
-        if (token) {
-          wx.request({
-            url: `${config.api.article.likeIdList}`,
-            method: 'GET',
-            header: { Authorization: `Bearer ${token}` },
-            success: (r) => {
-              const ids = Array.isArray(r.data) ? r.data : []
-              const liked = ids.includes(item.id)
-              const a = this.data.article
-              this.setData({ article: { ...a, liked }, liked })
-            }
-          })
-        }
+        this.checkLikeStatus(item.id)
+        this.checkCommentStatus(item.id)
+        this.fetchArticleDetail(item.id)
         this.fetchComments(item.id)
       })
     } else if (options && options.id) {
@@ -36,20 +25,8 @@ Page({
       const tcid = Number(options.comment_id || 0)
       this.setData({ article: { id }, liked: false, commentFocus: false, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: tcid, targetCommentParentId: 0 })
       this.increaseView(id)
-      const token = wx.getStorageSync('token') || ''
-      if (token) {
-        wx.request({
-          url: `${config.api.article.likeIdList}`,
-          method: 'GET',
-          header: { Authorization: `Bearer ${token}` },
-          success: (r) => {
-            const ids = Array.isArray(r.data) ? r.data : []
-            const liked = ids.includes(id)
-            const a = this.data.article
-            this.setData({ article: { ...a, liked }, liked })
-          }
-        })
-      }
+      this.checkLikeStatus(id)
+      this.checkCommentStatus(id)
       this.fetchArticleDetail(id)
       this.fetchComments(id)
     }
@@ -91,28 +68,55 @@ Page({
   },
 
   fetchArticleDetail(id) {
-    const setFrom = (item) => {
-      const gender = item.gender || ''
-      const year = item.year || ''
-      const genderIcon = item.genderIcon || (gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''))
-      const yearText = item.yearText || (year ? `${year}级` : '')
-      const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText, imgs: String(item.img || '').split(',').map(s => s.trim()).filter(s => !!s) }
-      const a = this.data.article || { id }
-      this.setData({ article: { ...a, ...enhanced } })
-    }
-    const tryPage = (p, max) => {
-      wx.request({
-        url: `${config.api.article.page}?page=${p}`,
-        method: 'GET',
-        success: (res) => {
-          const list = Array.isArray(res.data) ? res.data : (res.data.items || [])
-          const found = list.find(a => Number(a.id) === id)
-          if (found) { setFrom(found) }
-          else if (p < max && list.length) { tryPage(p + 1, max) }
+    wx.request({
+      url: config.api.article.detail(id),
+      method: 'GET',
+      success: (res) => {
+        if (res.statusCode === 200 && res.data) {
+          const item = res.data
+          const gender = item.gender || ''
+          const year = item.year || ''
+          const genderIcon = item.genderIcon || (gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''))
+          const yearText = item.yearText || (year ? `${year}级` : '')
+          const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText, imgs: String(item.img || '').split(',').map(s => s.trim()).filter(s => !!s) }
+          const a = this.data.article || { id }
+          this.setData({ article: { ...a, ...enhanced } })
         }
-      })
-    }
-    tryPage(1, 10)
+      }
+    })
+  },
+
+  checkLikeStatus(id) {
+    const token = wx.getStorageSync('token')
+    if (!token) return
+    wx.request({
+      url: `${config.api.article.checkLike}?article_id=${id}`,
+      method: 'GET',
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          const liked = !!res.data
+          const a = this.data.article
+          this.setData({ article: { ...a, liked }, liked })
+        }
+      }
+    })
+  },
+
+  checkCommentStatus(id) {
+    const token = wx.getStorageSync('token')
+    if (!token) return
+    wx.request({
+      url: `${config.api.article.checkComment}?article_id=${id}`,
+      method: 'GET',
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          const commented = !!res.data
+          this.setData({ commented })
+        }
+      }
+    })
   },
 
   fetchComments(articleId) {
@@ -170,7 +174,7 @@ Page({
         }
         const top = merged.filter(c => Number(c.parent_id || 0) === 0)
         const threads = top.map(c => ({ ...c, children: (rootChildrenMap[c.id] || []).map(child => ({ ...child, imgs: String(child.img || '').split(',').map(s => s.trim()).filter(s => !!s) })), showReplies: false }))
-        const hasMore = incoming.length === 5
+        const hasMore = incoming.length >= 10
         this.setData({ comments: merged, threads, commentHasMore: hasMore })
         const token = wx.getStorageSync('token') || ''
         if (token) {
@@ -220,12 +224,15 @@ Page({
             }
           }
         }
-        if (hasMore && added > 0) {
-          this.setData({ commentPage: this.data.commentPage + 1 })
-          this.fetchComments(articleId)
-        }
       }
     })
+  },
+
+  onReachBottom() {
+    if (this.data.commentHasMore) {
+      this.setData({ commentPage: this.data.commentPage + 1 })
+      this.fetchComments(this.data.article.id)
+    }
   },
 
   onCommentInput(e) { this.setData({ commentText: e.detail.value }) },

@@ -34,6 +34,14 @@ async def get_articles_by_page(
 ):
     return await ArticleService(session).get_by_page(page, page_size)
 
+# 查询指定文章详情
+@router.get("/{article_id}/detail", status_code=200,description="查询指定文章详情")
+async def get_article_detail(
+    article_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    return await ArticleService(session).get_by_articleid(article_id)
+
 # 文章评论
 @router.post("/{article_id}/comments", status_code=201,description="文章评论")
 async def comment_article(
@@ -53,14 +61,15 @@ async def delete_comment(
 ):
     return await ArticleService(session).delete_comment(comment_id, user_id)
 
-# 按时间顺序获取文章评论
-@router.get("/comments", status_code=200,description="按时间顺序获取文章评论（一页5条）")
+# 按时间顺序分页获取文章评论
+@router.get("/comments", status_code=200,description="按时间顺序分页获取文章评论")
 async def get_article_comments(
     article_id: int,
-    page: int = 1,
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
     session: AsyncSession = Depends(get_session),
 ):
-    return await ArticleService(session).get_comments(article_id, page)
+    return await ArticleService(session).get_comments(article_id, page, page_size)
 
 # 文章点赞/取消点赞
 @router.post("/like", status_code=200,description="文章点赞/取消点赞")
@@ -80,6 +89,15 @@ async def like_comment(
 ):
     return await ArticleService(session).like_comment(comment_id, user_id)
 
+# 查询用户是否点赞过文章
+@router.get("/like/check", status_code=200,description="查询用户是否点赞过文章")
+async def check_like(
+    article_id: int = Query(..., description="文章ID"),
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).check_like(article_id, user_id)
+
 # 查询用户点赞的文章id列表
 @router.get("/likeidlist", status_code=200,description="查询用户点赞的文章id列表")
 async def get_liked_articles(
@@ -95,6 +113,15 @@ async def get_liked_comments(
     user_id: int = Depends(get_current_user_id),
 ):
     return await ArticleService(session).get_liked_comments(user_id)
+
+# 查询用户是否评论过文章
+@router.get("/comment/check", status_code=200,description="查询用户是否评论过文章")
+async def check_comment(
+    article_id: int = Query(..., description="文章ID"),
+    session: AsyncSession = Depends(get_session),
+    user_id: int = Depends(get_current_user_id),
+):
+    return await ArticleService(session).check_comment(article_id, user_id)
 
 # 查询用户评论过的文章id列表
 @router.get("/comment/articlelist", status_code=200,description="查询用户评论过的文章id列表")

@@ -45,9 +45,9 @@ class ArticleLike(Base):
 class ArticleComment(Base):
     __tablename__ = "comments"
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True) # 主键，自动递增
-    # 关联用户ID
     user_id : Mapped[int] = mapped_column(nullable=False) # 用户ID，非空
-    # 关联文章ID
+    username : Mapped[str] = mapped_column(String(20), nullable=False) # 用户名，非空
+    avatar : Mapped[str] = mapped_column(String(200), nullable=False) # 用户头像URL，非空
     article_id : Mapped[int] = mapped_column(nullable=False) # 文章ID，非空
     parent_id : Mapped[int] = mapped_column(default=0) # 父评论ID，0为一级评论，大于0为二级评论（值为一级评论ID）
     content : Mapped[str] = mapped_column(String(200), nullable=False) # 评论内容，非空
