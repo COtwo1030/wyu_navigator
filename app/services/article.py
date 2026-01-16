@@ -323,31 +323,19 @@ class ArticleService:
         # 记录浏览记录
         await ArticleCRUD(self.session).record_view(article_id, user_id)
         logger.info(f"用户 {user_id} 浏览文章 {article_id}")
-    
     # 查询用户发表的文章
-    async def get_by_user(self, user_id: int) -> list[dict]:
+    async def get_by_user(self, user_id: int, page: int, page_size: int) -> list[dict]:
         """
         查询用户发表的文章
         参数:
             user_id: 用户ID
         返回:
-            list[dict]: 精简文章列表（仅 id、tag、content、img）
+            list[dict]
         """
-        # 判断用户是否存在
-        if not await AuthCRUD(self.session).check_exists(user_id):
-            raise ValueError("用户不存在")
         # 查询文章
-        articles = await ArticleCRUD(self.session).get_by_user(user_id)
-        logger.info(f"用户 {user_id} 查询发表的文章")
-        return [
-            {
-                "id": a.id,
-                "tag": a.tag or "",
-                "content": a.content,
-                "img": a.img or ""
-            }
-            for a in articles
-        ]
+        articles = await ArticleCRUD(self.session).get_by_user(user_id, page, page_size)
+        logger.info(f"用户 {user_id} 查询发表的文章，页码 {page}")
+        return articles
     
     # 批量根据ID获取文章（返回精简字段）
     async def get_articles_by_article_ids(self, ids: list[int]) -> list[dict]:

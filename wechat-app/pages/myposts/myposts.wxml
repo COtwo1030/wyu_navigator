@@ -1,16 +1,29 @@
 <navigation-bar extClass="nav-default" title="{{'我发布的'}}" back="{{true}}" color="black" background="#FFF" animated="{{false}}"></navigation-bar>
 <view class="myposts">
   <view class="topbar">
-    <button class="nav-delete-btn" bindtap="toggleDeleteMode">删除</button>
+    <button class="nav-delete-btn" size="mini" bindtap="toggleDeleteMode">删除</button>
   </view>
   <view class="toolbar" wx:if="{{deleteMode}}">
-    <button class="select-all-btn" bindtap="onSelectAllTap">全选</button>
+    <button class="select-all-btn" size="mini" bindtap="onSelectAllTap">全选</button>
   </view>
-  <scroll-view scroll-y class="list">
+  <scroll-view scroll-y class="list" lower-threshold="80" bindscrolltolower="onScrollToLower">
     <block wx:for="{{articles}}" wx:key="id">
       <view class="card" bindtap="onCardTap" data-id="{{item.id}}">
         <image wx:if="{{deleteMode}}" class="del-icon" src="{{selectedMap[item.id] ? '/images/tabbar/delete_active.png' : '/images/tabbar/delete.png'}}" mode="aspectFit" catchtap="onToggleSelectTap" data-id="{{item.id}}"></image>
         <view class="card-body {{deleteMode ? 'shifted' : ''}}">
+          <view class="header">
+            <image class="avatar" src="{{item.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
+            <view class="header-right">
+              <view class="top-row">
+                <text class="username">{{item.username}}</text>
+                <text class="time">{{item.create_time}}</text>
+              </view>
+              <view class="meta" wx:if="{{item.genderIcon || item.yearText}}">
+                <image wx:if="{{item.genderIcon}}" class="gender-icon" src="/images/tabbar/{{item.genderIcon}}" mode="aspectFit"></image>
+                <view wx:if="{{item.yearText}}" class="year-badge">{{item.yearText}}</view>
+              </view>
+            </view>
+          </view>
           <view wx:if="{{item.tag}}" class="tag">#{{item.tag}}</view>
           <view class="content">{{item.content}}</view>
           <block wx:if="{{item.imgs && item.imgs.length}}">
@@ -23,9 +36,29 @@
               </block>
             </view>
           </block>
+          <view class="metrics">
+            <view class="metric">
+              <image class="metric-icon" src="/images/tabbar/look.png" mode="aspectFit"></image>
+              <text wx:if="{{item.view_count}}" class="metric-num">{{item.view_count}}</text>
+            </view>
+            <view class="metrics-right">
+              <view class="metric" catchtap="onLikeArticleTap" data-id="{{item.id}}">
+                <image class="metric-icon" src="{{item.liked ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit"></image>
+                <text wx:if="{{item.like_count}}" class="metric-num">{{item.like_count}}</text>
+              </view>
+              <view class="metric" catchtap="onCommentTap" data-id="{{item.id}}">
+                <image class="metric-icon" src="{{item.commented ? '/images/tabbar/commented.png' : '/images/tabbar/comment.png'}}" mode="aspectFit"></image>
+                <text wx:if="{{item.comment_count}}" class="metric-num">{{item.comment_count}}</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
     </block>
+  <view class="footer">
+    <view wx:if="{{loading}}" class="loading">加载中...</view>
+    <view wx:if="{{!hasMore && articles.length}}" class="nomore">没有更多了</view>
+  </view>
   </scroll-view>
   <view wx:if="{{deleteMode}}" class="delete-bar">
     <button class="confirm-delete-btn" bindtap="onConfirmDeleteTap">确认删除</button>

@@ -147,16 +147,18 @@ async def increase_view_count(
         user_id = 0
     return await ArticleService(session).increase_view_count(article_id, user_id)
 
-# 查询用户发表的文章
-@router.get("/user", status_code=200,description="查询用户发表的文章")
+# 按时间顺序分页查询用户发表的文章
+@router.get("/user", status_code=200,description="按时间顺序分页查询用户发表的文章")
 async def get_user_articles(
     user_id: int = Depends(get_current_user_id),
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
     session: AsyncSession = Depends(get_session),
 ):
-    return await ArticleService(session).get_by_user(user_id)
+    return await ArticleService(session).get_by_user(user_id, page, page_size)
 
-# 查询用户点赞过的文章
-@router.get("/user/likelist", status_code=200,description="查询用户点赞的文章列表")
+# 按时间顺序分页查询用户点赞过的文章
+@router.get("/user/likelist", status_code=200,description="按时间顺序分页查询用户点赞过的文章列表")
 async def get_liked_articles(
     session: AsyncSession = Depends(get_session),
     user_id: int = Depends(get_current_user_id),

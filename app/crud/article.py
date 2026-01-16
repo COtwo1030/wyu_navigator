@@ -478,19 +478,42 @@ class ArticleCRUD:
         await self.session.commit()
     
     # 查询用户发表的文章
-    async def get_by_user(self, user_id: int) -> list[Article]:
+    async def get_by_user(self, user_id: int, page: int, page_size: int) -> list[dict]:
         """
         查询用户发表的文章（status为0）
         参数:
             user_id: 用户ID
+            page: 页码
+            page_size: 每页数量
         返回:
-            list[Article]: 文章列表
+            list[dict]: 文章列表
         """
         # 查询文章
         result = await self.session.execute(
             select(Article).filter(Article.user_id == user_id, Article.status == 0)
+            .order_by(Article.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
-        return result.scalars().all()
+        articles = result.scalars().all()
+        return [
+            {
+                "id": article.id,
+                "user_id": article.user_id,
+                "username": article.username,
+                "avatar": article.avatar,
+                "gender": article.gender,
+                "year": article.year,
+                "tag": article.tag,
+                "content": article.content,
+                "img": article.img,
+                "view_count": article.view_count,
+                "like_count": article.like_count,
+                "comment_count": article.comment_count,
+                "create_time": article.create_time.strftime("%Y-%m-%d %H:%M"),
+            }
+            for article in articles
+        ]
 
     # 批量根据ID查询文章
     async def get_by_ids(self, ids: list[int]) -> list[Article]:
