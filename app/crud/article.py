@@ -315,16 +315,17 @@ class ArticleCRUD:
             article.comment_count += 1
             self.session.add(article)
         return article is not None
-    # 检查父评论是否存在
-    async def check_parent_exists(self, parent_id: int) -> bool:
+    # 查询文章id和父评论id
+    async def get_articleid_parentid(self, comment_id: int) -> tuple[int, int]:
         """
-        检查父评论是否存在
+        查询文章id和父评论id
         参数:
-            parent_id: 父评论ID
+            comment_id: 评论ID
         返回:
-            bool: 是否存在
+            int: 父评论ID
         """
-        return await self.session.get(ArticleComment, parent_id) is not None
+        comment = await self.session.get(ArticleComment, comment_id)
+        return comment.article_id, comment.parent_id
     # 增加文章评论内容
     async def comment(self, article_id: int, data: ArticleCommentData, user_id: int, username: str, avatar: str) -> ArticleComment:
         """
@@ -403,7 +404,7 @@ class ArticleCRUD:
             for c in comments
         ]
     # 按点赞量分页获取文章二级评论
-    async def get_replies(self, parent_id: int, page: int = 1, page_size: int = 5) -> list[dict]:
+    async def get_replies(self, parent_id: int, page: int = 1, page_size: int = 3) -> list[dict]:
         """
         按点赞量分页获取文章二级评论（status为0）
         参数:

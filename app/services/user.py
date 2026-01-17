@@ -32,7 +32,6 @@ class UserService:
         await UserCRUD(self.session).upload_avatar(user_id, avatar_url)
         logger.info(f"用户 {user_id} 上传头像: {avatar_url}")
         return {"message": "头像上传成功"}
-    
     # 上传用户详情
     async def upload_user_detail(self, user_id: int, user_detail: UserDetailData):
         """
@@ -52,7 +51,6 @@ class UserService:
         await UserCRUD(self.session).upload_user_detail(user_id, user_detail)
         logger.info(f"用户 {user_id} 上传详情: {user_detail}")
         return {"message": "详情上传成功"}
-
     # 查询用户信息
     async def get_user_info(self, user_id: int):
         """
@@ -86,7 +84,6 @@ class UserService:
         interacts = await UserCRUD(self.session).get_user_interact(user_id, page, page_size)
         logger.info(f"用户 {user_id} 查询互动记录: {interacts}")
         return interacts
-    
     # 阅读互动记录
     async def read_user_interacts(self, user_id: int):
         """

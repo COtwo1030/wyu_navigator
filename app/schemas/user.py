@@ -36,8 +36,10 @@ class InteractData(BaseModel):
     sender_avatar: Annotated[str, Field(min_length=1, max_length=200, description="发送者头像URL")]
     # 互动类型（文章点赞1/文章评论2/评论点赞3/评论回复4）
     interact_type: Annotated[int, Field(description="互动类型")]
+    # 关联文章ID
+    article_id: Annotated[int, Field(description="关联文章ID")]
     # 关联业务id
-    relate_id: Annotated[int, Field(description="关联业务ID")]
+    relate_id: Annotated[str, Field(description="关联业务ID")]
     # 互动消息内容
     sender_content: Annotated[str, Field(min_length=0, max_length=5000, description="互动消息内容")]
     # 图片URL

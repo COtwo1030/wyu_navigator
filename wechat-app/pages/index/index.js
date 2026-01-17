@@ -188,7 +188,7 @@ Page({
     const id = e.currentTarget.dataset.id
     const item = (this.data.articles || []).find(a => a.id === id) || { id }
     wx.navigateTo({
-      url: '/pages/article/detail',
+      url: `/pages/article/detail?id=${id}`,
       success: (res) => { res.eventChannel.emit('article', { ...item, openComment: true }) }
     })
   },
@@ -196,7 +196,7 @@ Page({
     const id = e.currentTarget.dataset.id
     const item = (this.data.articles || []).find(a => a.id === id) || {}
     wx.navigateTo({
-      url: '/pages/article/detail',
+      url: `/pages/article/detail?id=${id}`,
       success: (res) => { res.eventChannel.emit('article', item) }
     })
   }

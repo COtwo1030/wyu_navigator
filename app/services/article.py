@@ -92,6 +92,13 @@ class ArticleService:
         返回:
             ArticleComment: 评论模型
         """
+        # 增加评论
+        # 获取评论用户的昵称，头像
+        comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
+        comment_user_username = comment_user["username"]
+        comment_user_avatar = comment_user["avatar"]
+        comment = await ArticleCRUD(self.session).comment(article_id, data, user_id, comment_user_username, comment_user_avatar)
+        logger.info(f"用户 {user_id} 评论文章 {article_id}，父评论ID {data.parent_id}，内容 {data.content}")
         # 增加评论计数
         success = await ArticleCRUD(self.session).increment_comment_count(article_id)
         if not success:
@@ -109,7 +116,7 @@ class ArticleService:
         # 互动类型（文章评论2/评论回复4）
         interact_type = 2 if data.parent_id == 0 else 4
         # 关联业务id
-        relate_id = article_id if data.parent_id == 0 else data.parent_id
+        relate_id = str(comment.id) if data.parent_id == 0 else f"{data.parent_id}/{comment.id}"
         # 互动消息内容
         content = data.content
         # 图片URL（只获取评论时的第一张图片）
@@ -123,22 +130,16 @@ class ArticleService:
             sender_username=comment_user_username,
             sender_avatar=comment_user_avatar,
             interact_type=interact_type,
+            article_id=article_id,
             relate_id=relate_id,
             sender_content=content,
             sender_img=sender_img
         )
-        print(interact_data)
         # 增加互动消息
         success = await UserCRUD(self.session).create_interact(interact_data)
         if not success:
             logger.warning("创建互动消息失败，但继续创建评论")
-        # 增加评论
-        # 获取评论用户的昵称，头像
-        comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
-        comment_user_username = comment_user["username"]
-        comment_user_avatar = comment_user["avatar"]
-        logger.info(f"用户 {user_id} 评论文章 {article_id}，父评论ID {data.parent_id}，内容 {data.content}")
-        return await ArticleCRUD(self.session).comment(article_id, data, user_id, comment_user_username, comment_user_avatar)
+        return comment
     # 删除文章评论
     async def delete_comment(self, comment_id: int, user_id: int) -> bool:
         """
@@ -170,7 +171,7 @@ class ArticleService:
         logger.info(f"获取文章 {article_id} 第 {page} 页一级评论")
         return comments
     # 按点赞量分页获取文章二级评论
-    async def get_replies(self, parent_id: int, page: int = 1, page_size: int = 5) -> list[ArticleComment]:
+    async def get_replies(self, parent_id: int, page: int = 1, page_size: int = 3) -> list[ArticleComment]:
         """
         按点赞量分页获取文章二级评论
         参数:
@@ -214,7 +215,7 @@ class ArticleService:
             # 互动类型（文章点赞1）
             interact_type = 1
             # 关联业务id
-            relate_id = article_id
+            relate_id = str(article_id)
             # 互动消息内容
             sender_content = "点赞了你的文章"
             await UserCRUD(self.session).create_interact(InteractData(
@@ -225,6 +226,7 @@ class ArticleService:
                 sender_username=comment_user_username,
                 sender_avatar=comment_user_avatar,
                 interact_type=interact_type,
+                article_id=article_id,
                 relate_id=relate_id,
                 sender_content=sender_content
             ))
@@ -250,6 +252,8 @@ class ArticleService:
             await ArticleCRUD(self.session).record_comment_like(comment_id, user_id)
             logger.info(f"用户 {user_id} 点赞评论 {comment_id}")
             # 生成互动消息
+            # 查询文章id和parent_id
+            article_id, parent_id = await ArticleCRUD(self.session).get_articleid_parentid(comment_id)
             # 获取评论者id，内容，图片
             comment = await ArticleCRUD(self.session).get_userid_content_img_from_comment(comment_id)
             comment_user_id = comment["user_id"]
@@ -259,12 +263,12 @@ class ArticleService:
             comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
             comment_user_username = comment_user["username"]
             comment_user_avatar = comment_user["avatar"]
-            # 互动类型（评论点赞3）
-            interact_type = 3
+            # 互动类型（评论点赞3 回复点赞5）
+            interact_type = 3 if parent_id == 0 else 5
             # 关联业务id
-            relate_id = comment_id
+            relate_id = str(comment_id) if parent_id == 0 else f"{parent_id}/{comment_id}"
             # 互动消息内容
-            sender_content = "点赞了你的评论"
+            sender_content = "点赞了你的评论" if parent_id == 0 else "点赞了你的回复"
             await UserCRUD(self.session).create_interact(InteractData(
                 receiver_id=comment_user_id,
                 receiver_content=comment_content,
@@ -273,6 +277,7 @@ class ArticleService:
                 sender_username=comment_user_username,
                 sender_avatar=comment_user_avatar,
                 interact_type=interact_type,
+                article_id=article_id,
                 relate_id=relate_id,
                 sender_content=sender_content
             ))

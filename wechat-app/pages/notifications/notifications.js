@@ -3,8 +3,6 @@ const config = require('../../config.js')
 Page({
   data: {
     items: [],
-    commentArticleMap: {},
-    mapReady: false,
     navigating: false,
     page: 1,
     page_size: 10,
@@ -32,28 +30,13 @@ Page({
           receiver_content: it.receiver_content || it.reciecer_content || '',
           create_time: it.create_time || '',
           interact_type: Number(it.interact_type || 0),
-          relate_id: Number(it.relate_id || 0),
+          article_id: Number(it.article_id || 0),
+          relate_id: String(it.relate_id || ''),
           status: (it.status === undefined || it.status === null) ? 1 : Number(it.status)
         }))
         const sorted = normalized.slice().sort((a, b) => (String(a.create_time) < String(b.create_time) ? 1 : -1))
         this.setData({ items: sorted, loading: false, hasMore: normalized.length >= this.data.page_size })
-        // 预拉取评论映射（comment_id -> article_id），用于类型3/4跳转
-        wx.request({
-          url: config.api.article.userCommentList,
-          method: 'GET',
-          header: { Authorization: `Bearer ${token}` },
-          success: (res) => {
-            const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data.items) ? res.data.items : [])
-            const map = {}
-            for (let i = 0; i < list.length; i++) {
-              const c = list[i]
-              const cid = Number(c.id)
-              const aid = Number(c.article_id)
-              if (cid > 0 && aid > 0) map[cid] = aid
-            }
-            this.setData({ commentArticleMap: map, mapReady: true })
-          }
-        })
+
       },
       fail: () => { this.setData({ loading: false }); wx.showToast({ title: '网络错误', icon: 'none' }) }
     })
@@ -64,57 +47,36 @@ Page({
     if (Number.isNaN(idx) || idx < 0) return
     const it = (this.data.items || [])[idx]
     const type = Number(it && it.interact_type)
-    const rid = Number(it && it.relate_id)
-    if (!rid || !type) { wx.showToast({ title: '缺少必要参数', icon: 'none' }); return }
-    if (type === 1 || type === 2) {
+    const aid = Number(it && it.article_id)
+    const ridRaw = String((it && it.relate_id) || '')
+    if (!aid || !type) { wx.showToast({ title: '缺少必要参数', icon: 'none' }); return }
+    const navigateArticle = (url, payload) => {
       this.setData({ navigating: true })
-      const url = `/pages/article/detail?id=${rid}`
       setTimeout(() => {
         wx.navigateTo({
           url,
-          success: (res) => { res.eventChannel.emit('article', { id: rid, content: it.receiver_content, img: it.receiver_img }) },
+          success: (res) => { res.eventChannel.emit('article', payload) },
           complete: () => { this.setData({ navigating: false }) }
         })
       }, 0)
+    }
+    if (type === 1) {
+      const url = `/pages/article/detail?id=${aid}`
+      navigateArticle(url, { id: aid, content: it.receiver_content, img: it.receiver_img })
       return
     }
-    if (type === 3 || type === 4) {
-      const map = this.data.commentArticleMap || {}
-      const aid = map[rid]
-      const go = (aid2) => {
-        this.setData({ navigating: true })
-        const url = `/pages/article/detail?id=${aid2}&comment_id=${rid}`
-        setTimeout(() => {
-          wx.navigateTo({
-            url,
-            success: (res) => { res.eventChannel.emit('article', { id: aid2, content: it.receiver_content, img: it.receiver_img, targetCommentId: rid }) },
-            complete: () => { this.setData({ navigating: false }) }
-          })
-        }, 0)
-      }
-      if (aid) { go(aid); return }
-      const token = wx.getStorageSync('token')
-      if (!token) { wx.showToast({ title: '请先登录', icon: 'none' }); return }
-      wx.request({
-        url: config.api.article.userCommentList,
-        method: 'GET',
-        header: { Authorization: `Bearer ${token}` },
-        success: (res) => {
-          const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data.items) ? res.data.items : [])
-          const m = {}
-          for (let i = 0; i < list.length; i++) {
-            const c = list[i]
-            const cid = Number(c.id)
-            const a = Number(c.article_id)
-            if (cid > 0 && a > 0) m[cid] = a
-          }
-          const newAid = m[rid]
-          this.setData({ commentArticleMap: m, mapReady: true })
-          if (newAid) { go(newAid) }
-          else { wx.showToast({ title: '暂不支持跳转（缺少文章ID）', icon: 'none' }) }
-        },
-        fail: () => { wx.showToast({ title: '网络错误，稍后重试', icon: 'none' }) }
-      })
+    if (type === 2 || type === 3) {
+      const cid = Number(ridRaw.split('/').pop() || 0)
+      const url = `/pages/article/detail?id=${aid}&comment_id=${cid}`
+      navigateArticle(url, { id: aid, content: it.receiver_content, img: it.receiver_img, targetCommentId: cid })
+      return
+    }
+    if (type === 4 || type === 5) {
+      const parts = ridRaw.split('/')
+      const pid = Number(parts[0] || 0)
+      const cid = Number(parts[1] || parts[0] || 0)
+      const url = pid > 0 ? `/pages/article/detail?id=${aid}&comment_id=${cid}&parent_id=${pid}` : `/pages/article/detail?id=${aid}&comment_id=${cid}`
+      navigateArticle(url, { id: aid, content: it.receiver_content, img: it.receiver_img, targetCommentId: cid, targetCommentParentId: pid })
       return
     }
   },
@@ -140,7 +102,8 @@ Page({
           receiver_content: it.receiver_content || it.reciecer_content || '',
           create_time: it.create_time || '',
           interact_type: Number(it.interact_type || 0),
-          relate_id: Number(it.relate_id || 0),
+          article_id: Number(it.article_id || 0),
+          relate_id: String(it.relate_id || ''),
           status: (it.status === undefined || it.status === null) ? 1 : Number(it.status)
         }))
         const merged = (this.data.items || []).concat(normalized)

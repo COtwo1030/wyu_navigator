@@ -1,9 +1,14 @@
 const config = require('../../config.js')
+const normalizeImgs = (val) => {
+  if (Array.isArray(val)) return val.filter(s => !!s)
+  return String(val || '').split(',').map(s => s.trim()).filter(s => !!s)
+}
 
 Page({
-  data: { article: {}, comments: [], threads: [], commentText: '', commentFocus: false, liked: false, likedComments: {}, commentParentId: 0, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, targetCommentId: 0, targetCommentParentId: 0, targetLoadTries: 0, commentImages: [] },
+  data: { article: {}, comments: [], threads: [], commentText: '', commentFocus: false, liked: false, likedComments: {}, commentParentId: 0, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, targetCommentId: 0, targetCommentParentId: 0, targetLoadTries: 0, commentImages: [], hasImages: false, canAddMore: true, canShowAdd: false, showSendButton: false, inputExpanded: false, inputClass: 'comment-input', showNoMoreComments: false },
 
   onLoad(options) {
+    const id = Number(options && options.id || 0)
     const ec = this.getOpenerEventChannel && this.getOpenerEventChannel()
     if (ec && ec.on) {
       ec.on('article', (item) => {
@@ -11,19 +16,21 @@ Page({
         const year = item.year || ''
         const genderIcon = item.genderIcon || (gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''))
         const yearText = item.yearText || (year ? `${year}级` : '')
-        const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText, imgs: String(item.img || '').split(',').map(s => s.trim()).filter(s => !!s) }
+        const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText, imgs: normalizeImgs(item.img || item.imgs) }
         const wantFocus = !!item.openComment
         this.setData({ article: enhanced, liked: !!enhanced.liked, commentFocus: wantFocus, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: Number(item.targetCommentId || 0), targetCommentParentId: Number(item.targetCommentParentId || 0), targetLoadTries: 0 })
+
         this.increaseView(item.id)
         this.checkLikeStatus(item.id)
         this.checkCommentStatus(item.id)
         this.fetchArticleDetail(item.id)
         this.fetchComments(item.id)
       })
-    } else if (options && options.id) {
-      const id = Number(options.id)
-      const tcid = Number(options.comment_id || 0)
-      this.setData({ article: { id }, liked: false, commentFocus: false, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: tcid, targetCommentParentId: 0, targetLoadTries: 0 })
+    }
+    if (id > 0 && !(this.data.article && this.data.article.id)) {
+      const tcid = Number(options && options.comment_id || 0)
+      const tpid = Number(options && options.parent_id || 0)
+      this.setData({ article: { id }, liked: false, commentFocus: false, commentPlaceholder: '我也来说一句', commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: tcid, targetCommentParentId: tpid, targetLoadTries: 0 })
       this.increaseView(id)
       this.checkLikeStatus(id)
       this.checkCommentStatus(id)
@@ -78,9 +85,12 @@ Page({
           const year = item.year || ''
           const genderIcon = item.genderIcon || (gender === '男' ? 'man.png' : (gender === '女' ? 'women.png' : ''))
           const yearText = item.yearText || (year ? `${year}级` : '')
-          const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText, imgs: String(item.img || '').split(',').map(s => s.trim()).filter(s => !!s) }
+          const nextImgs = normalizeImgs(item.img || item.imgs)
+          const enhanced = { ...item, avatar: item.avatar || '/images/tabbar/avator.png', genderIcon, yearText }
           const a = this.data.article || { id }
-          this.setData({ article: { ...a, ...enhanced } })
+          const kept = Array.isArray(a.imgs) ? a.imgs : []
+          const finalImgs = nextImgs.length ? nextImgs : kept
+          this.setData({ article: { ...a, ...enhanced, imgs: finalImgs } })
         }
       }
     })
@@ -132,7 +142,7 @@ Page({
         const incoming = Array.isArray(res.data) ? res.data : (res.data.items || [])
         const top = incoming.map(c => ({
           ...c,
-          imgs: String(c.img || '').split(',').map(s => s.trim()).filter(s => !!s),
+          imgs: normalizeImgs(c.img || c.imgs),
           reply_count: Number(c.reply_count || 0),
           replies: [],
           repliesPage: 1,
@@ -143,7 +153,7 @@ Page({
         const hasMore = incoming.length >= 10
         const existed = (this.data.threads || [])
         const merged = this.data.commentPage === 1 ? top : existed.concat(top)
-        this.setData({ comments: merged, threads: merged, commentHasMore: hasMore })
+        this.setData({ comments: merged, threads: merged, commentHasMore: hasMore, showNoMoreComments: (!hasMore && merged.length > 0) })
         const token = wx.getStorageSync('token') || ''
         if (token) {
           wx.request({
@@ -164,15 +174,29 @@ Page({
           })
         }
         const tcid = Number(this.data.targetCommentId || 0)
-        if (tcid > 0) {
-          const tds = (this.data.threads || []).slice()
+        const tpid = Number(this.data.targetCommentParentId || 0)
+        const tds = (this.data.threads || []).slice()
+        const articleId = Number(this.data.article && this.data.article.id)
+        if (tcid > 0 && tpid > 0) {
+          const idx = tds.findIndex(t => Number(t.id) === tpid)
+          if (idx >= 0) {
+            this.fetchReplies(idx, 1)
+          } else if (this.data.commentHasMore && Number(this.data.targetLoadTries || 0) < 3) {
+            this.setData({ commentPage: this.data.commentPage + 1, targetLoadTries: Number(this.data.targetLoadTries || 0) + 1 })
+            this.fetchComments(articleId)
+          } else {
+            this.setData({ targetCommentId: 0, targetCommentParentId: 0, targetLoadTries: 0 })
+          }
+        } else if (tcid > 0) {
           const topFound = tds.find(t => Number(t.id) === tcid)
           if (topFound) {
             wx.pageScrollTo({ selector: `#comment-${tcid}`, duration: 200 })
-            this.setData({ targetCommentId: 0 })
+            this.setData({ targetCommentId: 0, targetLoadTries: 0 })
+          } else if (this.data.commentHasMore && Number(this.data.targetLoadTries || 0) < 3) {
+            this.setData({ commentPage: this.data.commentPage + 1, targetLoadTries: Number(this.data.targetLoadTries || 0) + 1 })
+            this.fetchComments(articleId)
           } else {
-            // 二级评论懒加载：不在此时强制遍历所有父评论请求二级评论，待用户展开时再加载
-            this.setData({ targetCommentId: 0 })
+            this.setData({ targetCommentId: 0, targetLoadTries: 0 })
           }
         }
       }
@@ -193,16 +217,30 @@ Page({
         const list = Array.isArray(res.data) ? res.data : (res.data.items || [])
         const mapped = list.map(child => ({
           ...child,
-          imgs: String(child.img || '').split(',').map(s => s.trim()).filter(s => !!s),
+          imgs: normalizeImgs(child.img || child.imgs),
           liked: !!(this.data.likedComments && this.data.likedComments[child.id])
         }))
         const tds = (this.data.threads || []).slice()
         const prev = tds[index] || {}
         const baseReplies = page === 1 ? [] : (prev.replies || [])
         const mergedReplies = baseReplies.concat(mapped)
-        const hasMore = list.length >= 5
+        const hasMore = mergedReplies.length < Number(prev.reply_count || 0)
         tds[index] = { ...prev, replies: mergedReplies, repliesPage: page, repliesHasMore: hasMore, loadingReplies: false, showReplies: true }
         this.setData({ threads: tds })
+        const tcid = Number(this.data.targetCommentId || 0)
+        const tpid = Number(this.data.targetCommentParentId || 0)
+        if (tpid > 0 && Number((this.data.threads || [])[index].id) === tpid && tcid > 0) {
+          const childFound = mergedReplies.find(c => Number(c.id) === tcid)
+          if (childFound) {
+            wx.pageScrollTo({ selector: `#reply-${tcid}`, duration: 200 })
+            this.setData({ targetCommentId: 0, targetCommentParentId: 0, targetLoadTries: 0 })
+          } else if (hasMore && Number(this.data.targetLoadTries || 0) < 3) {
+            this.setData({ targetLoadTries: Number(this.data.targetLoadTries || 0) + 1 })
+            this.fetchReplies(index, Number(prev.repliesPage || 1) + 1)
+          } else {
+            this.setData({ targetCommentId: 0, targetCommentParentId: 0, targetLoadTries: 0 })
+          }
+        }
       },
       fail: () => {
         const tds = (this.data.threads || []).slice()
@@ -221,14 +259,17 @@ Page({
     }
   },
 
-  onCommentInput(e) { this.setData({ commentText: e.detail.value }) },
-  onCommentFocus() { this.setData({ commentFocus: true }) },
-  onCommentBlur() { this.setData({ commentFocus: false }) },
+  onCommentInput(e) { const v = e.detail.value || ''; this.setData({ commentText: v, showSendButton: !!this.data.commentFocus }) },
+  onCommentFocus() { this.setData({ commentFocus: true, showSendButton: true, inputExpanded: false, inputClass: 'comment-input' }) },
+  onCommentBlur() { this.setData({ commentFocus: false, showSendButton: false, inputExpanded: false, inputClass: 'comment-input' }) },
   onUploadCommentImage() {
     const token = wx.getStorageSync('token') || ''
     if (!token) { wx.showToast({ title: '请先登录', icon: 'none' }); wx.navigateTo({ url: '/pages/login/login' }); return }
+    const current = (this.data.commentImages || []).length
+    const remain = Math.max(0, 3 - current)
+    if (remain <= 0) { wx.showToast({ title: '最多选择3张图片', icon: 'none' }); return }
     wx.chooseImage({
-      count: 3,
+      count: remain,
       sizeType: ['compressed'],
       sourceType: ['album','camera'],
       success: async (sel) => {
@@ -267,7 +308,9 @@ Page({
             const link = `https://wuyu.s3.bitiful.net/${key}`
             const imgs = (this.data.commentImages || []).slice()
             imgs.push(link)
-            this.setData({ commentImages: imgs })
+            const hasText = ((this.data.commentText || '').trim().length > 0)
+            const hasImages = imgs.length > 0
+            this.setData({ commentImages: imgs, hasImages, canAddMore: imgs.length < 3, canShowAdd: hasImages && imgs.length < 3, showSendButton: !!this.data.commentFocus, inputExpanded: false, inputClass: 'comment-input' })
           }
           wx.hideLoading()
           wx.showToast({ title: '上传成功', icon: 'success' })
@@ -277,6 +320,16 @@ Page({
         }
       }
     })
+  },
+  onRemoveCommentImage(e) {
+    const d = e.currentTarget && e.currentTarget.dataset ? e.currentTarget.dataset : {}
+    const idx = Number((d.idx !== undefined ? d.idx : (d.index !== undefined ? d.index : -1)))
+    if (Number.isNaN(idx) || idx < 0) return
+    const imgs = (this.data.commentImages || []).slice()
+    imgs.splice(idx, 1)
+    const hasText = ((this.data.commentText || '').trim().length > 0)
+    const hasImages = imgs.length > 0
+    this.setData({ commentImages: imgs, hasImages, canAddMore: imgs.length < 3, canShowAdd: hasImages && imgs.length < 3, showSendButton: hasText || !!this.data.commentFocus })
   },
   getUploadUrl(key, contentType) {
     return new Promise((resolve, reject) => {
@@ -346,21 +399,28 @@ Page({
 
   onToggleRepliesTap(e) {
     const idx = Number(e.currentTarget.dataset.index)
+    const action = e.currentTarget.dataset.action || ''
     const tds = (this.data.threads || []).slice()
     const item = tds[idx] || {}
     if (!item.showReplies) {
       tds[idx] = { ...item, showReplies: true }
       this.setData({ threads: tds })
       this.fetchReplies(idx, 1)
+      return
+    }
+    if (action === 'collapse') {
+      tds[idx] = { ...item, showReplies: false }
+      this.setData({ threads: tds })
+      wx.pageScrollTo({ selector: `#comment-${item.id}`, duration: 200 })
+      return
+    }
+    if (item.repliesHasMore) {
+      const page = Number(item.repliesPage || 1) + 1
+      this.fetchReplies(idx, page)
     } else {
-      if (item.repliesHasMore) {
-        const page = Number(item.repliesPage || 1) + 1
-        this.fetchReplies(idx, page)
-      } else {
-        tds[idx] = { ...item, showReplies: false }
-        this.setData({ threads: tds })
-        wx.pageScrollTo({ selector: `#comment-${item.id}`, duration: 200 })
-      }
+      tds[idx] = { ...item, showReplies: false }
+      this.setData({ threads: tds })
+      wx.pageScrollTo({ selector: `#comment-${item.id}`, duration: 200 })
     }
   },
 
@@ -409,13 +469,15 @@ Page({
       header: { 'content-type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       data: { parent_id: this.data.commentParentId || 0, content, img: (this.data.commentImages || []).join(',') || null },
       success: (res) => {
-        const { statusCode } = res
+        const { statusCode, data } = res
         if (statusCode === 201) {
+          const newId = Number((data && data.id) || 0)
+          const parentId = Number(this.data.commentParentId || 0)
           wx.showToast({ title: '评论成功', icon: 'success' })
-          this.setData({ commentText: '', commentParentId: 0, commentPlaceholder: '我也来说一句', commentImages: [] })
+          this.setData({ commentText: '', commentParentId: 0, commentPlaceholder: '我也来说一句', commentImages: [], hasImages: false, canAddMore: true, canShowAdd: false, showSendButton: false, inputExpanded: false, inputClass: 'comment-input' })
           const a = this.data.article
           this.setData({ article: { ...a, comment_count: (a.comment_count || 0) + 1 } })
-          this.setData({ commentPage: 1, commentHasMore: true, comments: [], threads: [] })
+          this.setData({ commentPage: 1, commentHasMore: true, comments: [], threads: [], targetCommentId: newId, targetCommentParentId: parentId > 0 ? parentId : 0, targetLoadTries: 0, showNoMoreComments: false })
           this.fetchComments(this.data.article.id)
         } else if (statusCode === 401) {
           wx.showToast({ title: '请先登录', icon: 'none' })

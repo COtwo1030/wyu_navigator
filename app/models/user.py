@@ -32,11 +32,13 @@ class InteractiveMessage(Base):
     sender_username: Mapped[str] = mapped_column(String(20), nullable=False, comment="发起者用户名")
     # 互动发起者头像URL（冗余存储，避免联表查询）
     sender_avatar: Mapped[str] = mapped_column(String(200), nullable=False, comment="发起者头像URL")
-    # 互动类型：1=文章被点赞 2=文章被评论 3=评论被点赞 4=评论被回复
-    interact_type: Mapped[int] = mapped_column(nullable=False, comment="互动类型：1-文章点赞 2-文章评论 3-评论点赞 4-评论回复")
+    # 互动类型：1=文章被点赞 2=文章被评论 3=评论被点赞 4=评论被回复 5=回复被点赞
+    interact_type: Mapped[int] = mapped_column(nullable=False, comment="互动类型：1-文章点赞 2-文章评论 3-评论点赞 4-评论回复 5-回复点赞")
+    # 文章ID
+    article_id: Mapped[int] = mapped_column(nullable=False, comment="关联文章ID")
     # 关联的业务ID（根据interact_type对应不同表）：
-    # - 类型1：关联article_id；类型2：关联article_id；类型3：关联comment_id；类型4：关联parent_id（被回复的评论ID）
-    relate_id: Mapped[int] = mapped_column(nullable=False, comment="关联业务ID")
+    # - 类型1点赞：关联article_id；类型2评论文章：关联comment_id；类型3点赞评论：关联comment_id；类型4回复：关联parent_id/comment_id（层级）
+    relate_id: Mapped[str] = mapped_column(String(50), nullable=False, comment="关联业务ID：点赞-文章ID 评论文章-评论ID 点赞评论-评论ID 回复-评论ID/父评论ID")
     # 消息内容预览（冗余存储，避免联表）：
     # - 类型1："XXX给你的文章点赞了"；类型2："XXX评论了你的文章：XXX"；类型3："XXX给你的评论点赞了"；类型4："XXX回复了你的评论：XXX"
     sender_content: Mapped[str] = mapped_column(String(5000), nullable=False, comment="发起者互动内容预览")

@@ -86,7 +86,7 @@ async def get_article_comments(
 async def get_article_replies(
     parent_id: int,
     page: int = Query(1, description="页码"),
-    page_size: int = Query(5, description="每页数量"),
+    page_size: int = Query(3, description="每页数量"),
     session: AsyncSession = Depends(get_session),
 ):
     return await ArticleService(session).get_replies(parent_id, page, page_size)

@@ -121,6 +121,7 @@ class UserCRUD:
                 sender_username=data.sender_username,
                 sender_avatar=data.sender_avatar,
                 interact_type=data.interact_type,
+                article_id=data.article_id,
                 relate_id=data.relate_id,
                 sender_content=data.sender_content,
                 sender_img=data.sender_img
@@ -159,6 +160,7 @@ class UserCRUD:
                 "receiver_content": r.receiver_content,
                 "receiver_img": r.receiver_img,
                 "interact_type": r.interact_type,
+                "article_id": r.article_id,
                 "relate_id": r.relate_id,
                 "status": r.status,
                 "create_time": r.create_time.strftime("%Y-%m-%d %H:%M")

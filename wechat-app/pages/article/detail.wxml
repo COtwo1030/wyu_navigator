@@ -38,29 +38,37 @@
   <view class="comment-item" id="comment-{{item.id}}">
     <view class="c-header">
       <image class="c-avatar" src="{{item.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
-      <text class="c-username">{{item.username}}</text>
-    </view>
-    <view class="c-content">{{item.content}}</view>
-    <block wx:if="{{item.imgs && item.imgs.length}}">
-      <view class="c-imgs">
-        <block wx:for="{{item.imgs}}" wx:key="*this" wx:for-item="img" wx:for-index="idx">
-          <view wx:if="{{idx < 3}}" class="c-img-wrap" catchtap="onPreviewCommentImageTap" data-urls="{{item.imgs}}" data-idx="{{idx}}">
-            <image class="c-img" src="{{img}}" mode="aspectFill" style="width: calc((100% - 16px) / 3); height: 80px; border-radius: 8px;"></image>
-            <view wx:if="{{idx === 2 && item.imgs.length > 3}}" class="c-more" style="position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,0.35);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;">+{{item.imgs.length - 3}}</view>
+      <view class="c-info">
+        <text class="c-username">{{item.username}}</text>
+        <view class="c-content">{{item.content}}</view>
+        <block wx:if="{{item.imgs && item.imgs.length}}">
+          <view class="c-imgs">
+            <block wx:for="{{item.imgs}}" wx:key="*this" wx:for-item="img" wx:for-index="idx">
+              <view wx:if="{{idx < 3}}" class="c-img-wrap" catchtap="onPreviewCommentImageTap" data-urls="{{item.imgs}}" data-idx="{{idx}}">
+                <image class="c-img" src="{{img}}" mode="aspectFill"></image>
+                <view wx:if="{{idx === 2 && item.imgs.length > 3}}" class="c-more" style="position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,0.35);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;">+{{item.imgs.length - 3}}</view>
+              </view>
+            </block>
           </view>
         </block>
-      </view>
-    </block>
-    <view class="c-meta">
-      <text class="c-time">{{item.create_time}}</text>
-      <text class="c-reply" bindtap="onReplyCommentTap" data-index="{{index}}" data-id="{{item.id}}" data-username="{{item.username}}">回复</text>
-      <view class="c-action" bindtap="onLikeCommentTap" data-parent-index="{{index}}" data-id="{{item.id}}">
-        <image class="c-icon" src="{{likedComments[item.id] ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit"></image>
-        <text wx:if="{{item.like_count > 0}}" class="c-num">{{item.like_count}}</text>
+        <view class="c-sub">
+          <text class="c-time">{{item.create_time}}</text>
+          <text class="c-reply" bindtap="onReplyCommentTap" data-index="{{index}}" data-id="{{item.id}}" data-username="{{item.username}}">回复</text>
+          <view class="c-action" bindtap="onLikeCommentTap" data-parent-index="{{index}}" data-id="{{item.id}}">
+            <image class="c-icon" src="{{likedComments[item.id] ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit"></image>
+            <text wx:if="{{item.like_count > 0}}" class="c-num">{{item.like_count}}</text>
+          </view>
+        </view>
       </view>
     </view>
+
+
     <view class="c-toggle" wx:if="{{item.reply_count > 0 && !item.showReplies}}" bindtap="onToggleRepliesTap" data-index="{{index}}">
-      展开{{item.reply_count}}条回复
+      <view class="c-toggle-row">
+        <view class="c-toggle-line"></view>
+        <text class="c-toggle-text">展开{{item.reply_count}}条回复</text>
+        <text class="c-toggle-icon">∨</text>
+      </view>
     </view>
     <block wx:if="{{item.showReplies}}">
       <view class="replies">
@@ -68,39 +76,74 @@
           <view class="reply-item" id="reply-{{child.id}}">
             <view class="r-header">
               <image class="r-avatar" src="{{child.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
-              <text class="r-username">{{child.username}}</text>
-
-            </view>
-            <view class="r-content">{{child.content}}</view>
-            <block wx:if="{{child.imgs && child.imgs.length}}">
-              <view class="r-imgs">
-                <block wx:for="{{child.imgs}}" wx:key="*this" wx:for-item="cimg" wx:for-index="cidx">
-                  <view wx:if="{{cidx < 3}}" class="c-img-wrap" catchtap="onPreviewCommentImageTap" data-urls="{{child.imgs}}" data-idx="{{cidx}}">
-                    <image class="c-img" src="{{cimg}}" mode="aspectFill" style="width: calc((100% - 16px) / 3); height: 80px; border-radius: 8px;"></image>
-                    <view wx:if="{{cidx === 2 && child.imgs.length > 3}}" class="c-more" style="position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,0.35);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;">+{{child.imgs.length - 3}}</view>
+              <view class="r-info">
+                <text class="r-username">{{child.username}}</text>
+                <view class="r-content">{{child.content}}</view>
+                <block wx:if="{{child.imgs && child.imgs.length}}">
+                  <view class="r-imgs">
+                    <block wx:for="{{child.imgs}}" wx:key="*this" wx:for-item="cimg" wx:for-index="cidx">
+                      <view wx:if="{{cidx < 3}}" class="c-img-wrap" catchtap="onPreviewCommentImageTap" data-urls="{{child.imgs}}" data-idx="{{cidx}}">
+                        <image class="c-img" src="{{cimg}}" mode="aspectFill"></image>
+                        <view wx:if="{{cidx === 2 && child.imgs.length > 3}}" class="c-more" style="position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,0.35);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;">+{{child.imgs.length - 3}}</view>
+                      </view>
+                    </block>
                   </view>
                 </block>
-              </view>
-            </block>
-            <view class="r-meta">
-              <text class="r-time">{{child.create_time}}</text>
-              <view class="r-action" bindtap="onLikeCommentTap" data-parent-index="{{index}}" data-child-index="{{cidx}}" data-id="{{child.id}}">
-                <image class="c-icon" src="{{likedComments[child.id] ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit"></image>
-                <text wx:if="{{child.like_count > 0}}" class="c-num">{{child.like_count}}</text>
+                <view class="r-sub">
+                  <text class="r-time">{{child.create_time}}</text>
+                  <view class="r-action" bindtap="onLikeCommentTap" data-parent-index="{{index}}" data-child-index="{{cidx}}" data-id="{{child.id}}">
+                    <image class="c-icon" src="{{likedComments[child.id] ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit"></image>
+                    <text wx:if="{{child.like_count > 0}}" class="c-num">{{child.like_count}}</text>
+                  </view>
+                </view>
               </view>
             </view>
+
+
           </view>
         </block>
       </view>
-      <view class="c-toggle" wx:if="{{item.showReplies && item.repliesHasMore}}" bindtap="onToggleRepliesTap" data-index="{{index}}">展开更多</view>
-      <view class="c-toggle" wx:if="{{item.showReplies && !item.repliesHasMore}}" bindtap="onToggleRepliesTap" data-index="{{index}}">收起</view>
+      <view wx:if="{{item.showReplies}}" class="c-toggle-bar">
+        <view class="c-toggle" wx:if="{{item.repliesHasMore}}" bindtap="onToggleRepliesTap" data-index="{{index}}" data-action="more">
+          <view class="c-toggle-row">
+            <view class="c-toggle-line"></view>
+            <text class="c-toggle-text">展开更多</text>
+            <text class="c-toggle-icon">∨</text>
+          </view>
+        </view>
+        <view class="c-toggle" bindtap="onToggleRepliesTap" data-index="{{index}}" data-action="collapse">
+          <view class="c-toggle-row">
+            <view wx:if="{{!item.repliesHasMore}}" class="c-toggle-line"></view>
+            <text class="c-toggle-text">收起</text>
+            <text class="c-toggle-icon">∧</text>
+          </view>
+        </view>
+      </view>
+
     </block>
   </view>
 </block>
+  <view wx:if="{{showNoMoreComments}}" class="no-more">没有更多评论了</view>
 </view>
-
+<view class="bottom-spacer"></view>
 <view class="comment-bar">
-  <input class="comment-input" placeholder="{{commentPlaceholder}}" maxlength="200" value="{{commentText}}" bindinput="onCommentInput" bindconfirm="sendComment" focus="{{commentFocus}}" bindfocus="onCommentFocus" bindblur="onCommentBlur" />
-  <image wx:if="{{commentFocus || commentText}}" class="upload-icon" src="/images/tabbar/upload.png" mode="aspectFit" bindtap="onUploadCommentImage" style="width: 20px; height: 20px; margin-left: 8px;"></image>
-  <image class="like-icon" src="{{article.liked ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit" bindtap="onLikeTap"></image>
+  <view class="cb-left">
+    <input class="{{inputClass}}" placeholder="{{commentPlaceholder}}" maxlength="200" value="{{commentText}}" bindinput="onCommentInput" bindconfirm="sendComment" focus="{{commentFocus}}" bindfocus="onCommentFocus" bindblur="onCommentBlur" />
+    <view wx:if="{{hasImages}}" class="attach-grid">
+      <block wx:for="{{commentImages}}" wx:key="*this" wx:for-item="cimg" wx:for-index="cidx">
+        <view class="attach-item">
+          <image class="attach-thumb" src="{{cimg}}" mode="aspectFill"></image>
+          <view class="attach-del" catchtap="onRemoveCommentImage" data-idx="{{cidx}}" data-index="{{cidx}}">×</view>
+        </view>
+      </block>
+      <view wx:if="{{canShowAdd}}" class="attach-add" bindtap="onUploadCommentImage">+</view>
+    </view>
+  </view>
+  <view class="cb-right">
+    <view class="send-button" wx:if="{{showSendButton}}" bindtap="sendComment">发送</view>
+    <view class="cb-bottom">
+      <image class="cb-icon" src="/images/tabbar/img.png" mode="aspectFit" bindtap="onUploadCommentImage"></image>
+      <image class="like-icon" src="{{article.liked ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit" bindtap="onLikeTap"></image>
+    </view>
+  </view>
 </view>
