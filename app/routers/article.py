@@ -25,6 +25,16 @@ async def delete_article(
 ):
     return await ArticleService(session).delete(article_id, user_id)
 
+# 按标签分页获取文章
+@router.get("/tag/{tag}", status_code=200,description="按标签分页获取文章")
+async def get_articles_by_tag(
+    tag: str,
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
+    session: AsyncSession = Depends(get_session),
+):
+    return await ArticleService(session).get_by_tag(tag, page, page_size)
+
 # 按时间倒序分页获取最新的文章
 @router.get("/page", status_code=200,description="按时间倒序分页获取最新的文章")
 async def get_articles_by_page(
@@ -61,8 +71,8 @@ async def delete_comment(
 ):
     return await ArticleService(session).delete_comment(comment_id, user_id)
 
-# 按时间顺序分页获取文章评论
-@router.get("/comments", status_code=200,description="按时间顺序分页获取文章评论")
+# 按点赞量分页获取文章一级评论
+@router.get("/comments", status_code=200,description="按点赞量分页获取文章一级评论")
 async def get_article_comments(
     article_id: int,
     page: int = Query(1, description="页码"),
@@ -70,6 +80,16 @@ async def get_article_comments(
     session: AsyncSession = Depends(get_session),
 ):
     return await ArticleService(session).get_comments(article_id, page, page_size)
+
+# 按点赞量分页获取文章二级评论
+@router.get("/{article_id}/replies", status_code=200,description="按点赞量分页获取文章二级评论")
+async def get_article_replies(
+    parent_id: int,
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(5, description="每页数量"),
+    session: AsyncSession = Depends(get_session),
+):
+    return await ArticleService(session).get_replies(parent_id, page, page_size)
 
 # 文章点赞/取消点赞
 @router.post("/like", status_code=200,description="文章点赞/取消点赞")

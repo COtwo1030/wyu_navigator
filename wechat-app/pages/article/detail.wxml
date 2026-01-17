@@ -59,18 +59,19 @@
         <text wx:if="{{item.like_count > 0}}" class="c-num">{{item.like_count}}</text>
       </view>
     </view>
-    <view class="c-toggle" wx:if="{{item.children.length}}" bindtap="onToggleRepliesTap" data-index="{{index}}">
-      {{item.showReplies ? '收起' : '展开'}}{{item.children.length}}条回复
+    <view class="c-toggle" wx:if="{{item.reply_count > 0 && !item.showReplies}}" bindtap="onToggleRepliesTap" data-index="{{index}}">
+      展开{{item.reply_count}}条回复
     </view>
     <block wx:if="{{item.showReplies}}">
       <view class="replies">
-        <block wx:for="{{item.children}}" wx:key="id" wx:for-item="child" wx:for-index="cidx">
+        <block wx:for="{{item.replies}}" wx:key="id" wx:for-item="child" wx:for-index="cidx">
           <view class="reply-item" id="reply-{{child.id}}">
             <view class="r-header">
               <image class="r-avatar" src="{{child.avatar || '/images/tabbar/avator.png'}}" mode="aspectFill"></image>
               <text class="r-username">{{child.username}}</text>
+
             </view>
-            <view class="r-content"><text wx:if="{{child.parent_id > 0 && child.reply_to}}">回复 {{child.reply_to}}：</text>{{child.content}}</view>
+            <view class="r-content">{{child.content}}</view>
             <block wx:if="{{child.imgs && child.imgs.length}}">
               <view class="r-imgs">
                 <block wx:for="{{child.imgs}}" wx:key="*this" wx:for-item="cimg" wx:for-index="cidx">
@@ -83,7 +84,6 @@
             </block>
             <view class="r-meta">
               <text class="r-time">{{child.create_time}}</text>
-              <text class="r-reply" bindtap="onReplyCommentTap" data-parent-index="{{index}}" data-child-index="{{cidx}}" data-id="{{child.id}}" data-username="{{child.username}}">回复</text>
               <view class="r-action" bindtap="onLikeCommentTap" data-parent-index="{{index}}" data-child-index="{{cidx}}" data-id="{{child.id}}">
                 <image class="c-icon" src="{{likedComments[child.id] ? '/images/tabbar/liked.png' : '/images/tabbar/like.png'}}" mode="aspectFit"></image>
                 <text wx:if="{{child.like_count > 0}}" class="c-num">{{child.like_count}}</text>
@@ -92,6 +92,8 @@
           </view>
         </block>
       </view>
+      <view class="c-toggle" wx:if="{{item.showReplies && item.repliesHasMore}}" bindtap="onToggleRepliesTap" data-index="{{index}}">展开更多</view>
+      <view class="c-toggle" wx:if="{{item.showReplies && !item.repliesHasMore}}" bindtap="onToggleRepliesTap" data-index="{{index}}">收起</view>
     </block>
   </view>
 </block>

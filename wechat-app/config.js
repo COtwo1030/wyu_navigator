@@ -30,10 +30,12 @@ const config = {
     article: {
       create: `${BASE}/article/create`,
       page: `${BASE}/article/page`,
+      tag: (tag) => `${BASE}/article/tag/${encodeURIComponent(tag)}`,
       view: `${BASE}/article/view`,
       detail: (id) => `${BASE}/article/${id}/detail`,
       comments: `${BASE}/article/comments`,
       commentPath: (id) => `${BASE}/article/${id}/comments`,
+      replies: (id) => `${BASE}/article/${id}/replies`,
       commentDelete: `${BASE}/article/comment/delete`,
       delete: `${BASE}/article/delete`,
       like: `${BASE}/article/like`,

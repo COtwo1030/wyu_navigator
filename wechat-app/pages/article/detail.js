@@ -130,52 +130,20 @@ Page({
           return
         }
         const incoming = Array.isArray(res.data) ? res.data : (res.data.items || [])
-        const existed = this.data.comments || []
-        const existsMap = {}
-        for (let i = 0; i < existed.length; i++) { existsMap[existed[i].id] = 1 }
-        const merged = existed.slice()
-        let added = 0
-        for (let i = 0; i < incoming.length; i++) {
-          const c = incoming[i]
-          if (!existsMap[c.id]) { merged.push(c); existsMap[c.id] = 1; added++ }
-        }
-        const idMap = {}
-        for (let i = 0; i < merged.length; i++) { idMap[merged[i].id] = merged[i] }
-        for (let i = 0; i < merged.length; i++) {
-          const c = merged[i]
-          const pid = Number(c.parent_id || 0)
-          let name = ''
-          if (pid > 0 && idMap[pid]) {
-            const p = idMap[pid]
-            if (Number(p.parent_id || 0) > 0) {
-              name = p.username || ''
-            }
-          }
-          c.reply_to = name
-        }
-        const rootChildrenMap = {}
-        for (let i = 0; i < merged.length; i++) {
-          const c = merged[i]
-          let pid = Number(c.parent_id || 0)
-          if (pid > 0) {
-            let p = idMap[pid]
-            while (p && Number(p.parent_id || 0) > 0) {
-              p = idMap[Number(p.parent_id || 0)]
-            }
-            const rootId = p ? p.id : pid
-            if (!rootChildrenMap[rootId]) rootChildrenMap[rootId] = []
-            rootChildrenMap[rootId].push(c)
-          }
-        }
-        for (let i = 0; i < merged.length; i++) {
-          const c = merged[i]
-          const imgs = String(c.img || '').split(',').map(s => s.trim()).filter(s => !!s)
-          c.imgs = imgs
-        }
-        const top = merged.filter(c => Number(c.parent_id || 0) === 0)
-        const threads = top.map(c => ({ ...c, children: (rootChildrenMap[c.id] || []).map(child => ({ ...child, imgs: String(child.img || '').split(',').map(s => s.trim()).filter(s => !!s) })), showReplies: false }))
+        const top = incoming.map(c => ({
+          ...c,
+          imgs: String(c.img || '').split(',').map(s => s.trim()).filter(s => !!s),
+          reply_count: Number(c.reply_count || 0),
+          replies: [],
+          repliesPage: 1,
+          repliesHasMore: Number(c.reply_count || 0) > 0,
+          loadingReplies: false,
+          showReplies: false
+        }))
         const hasMore = incoming.length >= 10
-        this.setData({ comments: merged, threads, commentHasMore: hasMore })
+        const existed = (this.data.threads || [])
+        const merged = this.data.commentPage === 1 ? top : existed.concat(top)
+        this.setData({ comments: merged, threads: merged, commentHasMore: hasMore })
         const token = wx.getStorageSync('token') || ''
         if (token) {
           wx.request({
@@ -190,10 +158,6 @@ Page({
               for (let i = 0; i < tds.length; i++) {
                 const t = tds[i]
                 t.liked = !!set[t.id]
-                const children = t.children || []
-                for (let j = 0; j < children.length; j++) {
-                  children[j].liked = !!set[children[j].id]
-                }
               }
               this.setData({ threads: tds, likedComments: set })
             }
@@ -207,30 +171,45 @@ Page({
             wx.pageScrollTo({ selector: `#comment-${tcid}`, duration: 200 })
             this.setData({ targetCommentId: 0 })
           } else {
-            let idx = -1
-            for (let i = 0; i < tds.length; i++) {
-              const children = tds[i].children || []
-              for (let j = 0; j < children.length; j++) {
-                if (Number(children[j].id) === tcid) { idx = i; break }
-              }
-              if (idx >= 0) break
-            }
-            if (idx >= 0) {
-              const c = tds[idx] || {}
-              tds[idx] = { ...c, showReplies: true }
-              this.setData({ threads: tds })
-              wx.pageScrollTo({ selector: `#reply-${tcid}`, duration: 200 })
-              this.setData({ targetCommentId: 0 })
-            } else {
-              if (this.data.commentHasMore && (this.data.targetLoadTries || 0) < 20) {
-                this.setData({ commentPage: this.data.commentPage + 1, targetLoadTries: (this.data.targetLoadTries || 0) + 1 })
-                this.fetchComments(this.data.article.id)
-              } else {
-                this.setData({ targetCommentId: 0 })
-              }
-            }
+            // 二级评论懒加载：不在此时强制遍历所有父评论请求二级评论，待用户展开时再加载
+            this.setData({ targetCommentId: 0 })
           }
         }
+      }
+    })
+  },
+
+  fetchReplies(index, page = 1) {
+    const threads = (this.data.threads || []).slice()
+    const item = threads[index]
+    if (!item) return
+    const articleId = Number(this.data.article && this.data.article.id)
+    threads[index] = { ...item, loadingReplies: true }
+    this.setData({ threads })
+    wx.request({
+      url: `${config.api.article.replies(articleId)}?parent_id=${item.id}&page=${page}`,
+      method: 'GET',
+      success: (res) => {
+        const list = Array.isArray(res.data) ? res.data : (res.data.items || [])
+        const mapped = list.map(child => ({
+          ...child,
+          imgs: String(child.img || '').split(',').map(s => s.trim()).filter(s => !!s),
+          liked: !!(this.data.likedComments && this.data.likedComments[child.id])
+        }))
+        const tds = (this.data.threads || []).slice()
+        const prev = tds[index] || {}
+        const baseReplies = page === 1 ? [] : (prev.replies || [])
+        const mergedReplies = baseReplies.concat(mapped)
+        const hasMore = list.length >= 5
+        tds[index] = { ...prev, replies: mergedReplies, repliesPage: page, repliesHasMore: hasMore, loadingReplies: false, showReplies: true }
+        this.setData({ threads: tds })
+      },
+      fail: () => {
+        const tds = (this.data.threads || []).slice()
+        const prev = tds[index] || {}
+        tds[index] = { ...prev, loadingReplies: false }
+        this.setData({ threads: tds })
+        wx.showToast({ title: '回复加载失败', icon: 'none' })
       }
     })
   },
@@ -343,10 +322,11 @@ Page({
         }
         const liked = !!(res.data && res.data.liked)
         const threads = (this.data.threads || []).slice()
-        if (typeof cid === 'number') {
-          const c = threads[pid].children[cid] || {}
+        if (cid !== undefined && cid !== null && cid !== '') {
+          const idx = Number(cid)
+          const c = (threads[pid].replies || [])[idx] || {}
           const next = liked ? (c.like_count || 0) + 1 : Math.max(0, (c.like_count || 0) - 1)
-          threads[pid].children[cid] = { ...c, like_count: next }
+          threads[pid].replies[idx] = { ...c, like_count: next }
         } else {
           const c = threads[pid] || {}
           const next = liked ? (c.like_count || 0) + 1 : Math.max(0, (c.like_count || 0) - 1)
@@ -365,12 +345,26 @@ Page({
   },
 
   onToggleRepliesTap(e) {
-    const idx = e.currentTarget.dataset.index
-    const threads = (this.data.threads || []).slice()
-    const c = threads[idx] || {}
-    threads[idx] = { ...c, showReplies: !c.showReplies }
-    this.setData({ threads })
+    const idx = Number(e.currentTarget.dataset.index)
+    const tds = (this.data.threads || []).slice()
+    const item = tds[idx] || {}
+    if (!item.showReplies) {
+      tds[idx] = { ...item, showReplies: true }
+      this.setData({ threads: tds })
+      this.fetchReplies(idx, 1)
+    } else {
+      if (item.repliesHasMore) {
+        const page = Number(item.repliesPage || 1) + 1
+        this.fetchReplies(idx, page)
+      } else {
+        tds[idx] = { ...item, showReplies: false }
+        this.setData({ threads: tds })
+        wx.pageScrollTo({ selector: `#comment-${item.id}`, duration: 200 })
+      }
+    }
   },
+
+
 
   onLikeTap() {
     const token = wx.getStorageSync('token') || ''

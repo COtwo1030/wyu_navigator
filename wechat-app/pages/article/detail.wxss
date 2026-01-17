@@ -38,10 +38,12 @@ page { background: #fff; }
 .r-header { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
 .r-username { color: #333; font-weight: 500; }
 .r-content { color: #333; margin-top: 4px; }
+
 .r-meta { margin-top: 6px; display: flex; align-items: center; gap: 16px; }
 .r-time { font-size: 12px; color: #999; }
 .r-reply { font-size: 12px; color: #4CAF50; }
 .r-action { display: flex; align-items: center; gap: 6px; }
+
 
 .comment-bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 8px 12px; box-shadow: 0 -6px 16px rgba(0,0,0,0.06); display: flex; gap: 8px; }
 .comment-input { flex: 1; height: 38px; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0 10px; }

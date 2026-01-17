@@ -35,27 +35,23 @@ Page({
     this.fetchPage(1)
   },
   updateDisplay() {
-    const idx = this.data.activeCategoryIndex
-    const cat = (this.data.categories || [])[idx] || '全部'
     const list = this.data.articles || []
-    if (cat === '全部') {
-      this.setData({ displayArticles: list })
-    } else {
-      const filtered = list.filter(a => String(a.tag || '') === cat)
-      this.setData({ displayArticles: filtered })
-    }
+    this.setData({ displayArticles: list })
   },
   onCategoryTap(e) {
     const idx = Number(e.currentTarget.dataset.idx)
     if (Number.isInteger(idx)) {
-      this.setData({ activeCategoryIndex: idx })
-      this.updateDisplay()
+      this.setData({ activeCategoryIndex: idx, articles: [], displayArticles: [], page: 1, hasMore: true })
+      this.fetchPage(1)
     }
   },
   fetchPage(page) {
     this.setData({ loading: true })
+    const idx = this.data.activeCategoryIndex
+    const cat = (this.data.categories || [])[idx] || '全部'
+    const baseUrl = (cat === '全部') ? `${config.api.article.page}` : `${config.api.article.tag(cat)}`
     wx.request({
-      url: `${config.api.article.page}?page=${page}`,
+      url: `${baseUrl}?page=${page}&page_size=${this.data.pageSize}`,
       method: 'GET',
       timeout: 10000,
       success: (res) => {

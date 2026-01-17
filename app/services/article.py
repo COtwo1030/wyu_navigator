@@ -42,6 +42,21 @@ class ArticleService:
         """
         logger.info(f"用户 {user_id} 删除文章 {article_id}")
         return await ArticleCRUD(self.session).delete(article_id, user_id)
+    # 按标签倒序分页获取最新的文章（一页十条）
+    async def get_by_tag(self, tag: str, page: int = 1, page_size: int = 10) -> list[dict]:
+        """
+        业务层：按标签倒序分页获取最新的文章（一页十条）
+        参数:
+            tag: 标签
+            page: 页码，默认第一页
+            page_size: 每页数量，默认十条
+        返回:
+            list[dict] 
+        """
+        articles = await ArticleCRUD(self.session).get_by_tag(tag, page, page_size)
+        logger.info(f"按标签 {tag} 获取第 {page} 页，每页 {page_size} 条文章: {articles}")
+        return articles
+    
     # 按时间倒序分页获取最新的文章（一页十条）
     async def get_by_page(self, page: int = 1, page_size: int = 10) -> list[dict]:
         """
@@ -78,13 +93,15 @@ class ArticleService:
             ArticleComment: 评论模型
         """
         # 增加评论计数
-        await ArticleCRUD(self.session).increment_comment_count(article_id)
+        success = await ArticleCRUD(self.session).increment_comment_count(article_id)
+        if not success:
+            logger.warning(f"增加文章 {article_id} 评论计数失败")
         # 生成互动消息
         # 获取文章作者id，内容，图片
         article = await ArticleCRUD(self.session).get_userid_content_img_from_article(article_id)
         article_user_id = article["user_id"]
         article_content = article["content"]
-        article_img = article["img"].split(',')[0] # 只获取文章的第一张图片
+        article_img = (article.get("img") or "").split(',')[0]  # 安全获取第一张图片，允许 img 为空
         # 获取评论用户的昵称，头像
         comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
         comment_user_username = comment_user["username"]
@@ -140,17 +157,29 @@ class ArticleService:
             raise ValueError("用户不存在")
         # 删除评论（status=0）
         return await ArticleCRUD(self.session).delete_comment(comment_id, user_id)
-    # 按时间倒序分页获取文章评论
-    async def get_comments(self, article_id: int, page: int = 1, page_size: int = 5) -> list[ArticleComment]:
+    # 按点赞量分页获取文章一级评论
+    async def get_comments(self, article_id: int, page: int = 1, page_size: int = 10) -> list[ArticleComment]:
         """
-        按时间倒序分页获取文章评论
+        按点赞量分页获取文章一级评论
         参数:
             article_id: 文章ID
         返回:
             list[ArticleComment]: 评论列表
         """
         comments = await ArticleCRUD(self.session).get_comments(article_id, page, page_size)
-        logger.info(f"获取文章 {article_id} 第 {page} 页")
+        logger.info(f"获取文章 {article_id} 第 {page} 页一级评论")
+        return comments
+    # 按点赞量分页获取文章二级评论
+    async def get_replies(self, parent_id: int, page: int = 1, page_size: int = 5) -> list[ArticleComment]:
+        """
+        按点赞量分页获取文章二级评论
+        参数:
+            parent_id: 父评论ID
+        返回:
+            list[ArticleComment]: 评论列表
+        """
+        comments = await ArticleCRUD(self.session).get_replies(parent_id, page, page_size)
+        logger.info(f"获取文章 {parent_id} 第 {page} 页二级评论")
         return comments
     # 文章点赞/取消点赞
     async def like(self, article_id: int, user_id: int) -> dict:
@@ -177,7 +206,7 @@ class ArticleService:
             article = await ArticleCRUD(self.session).get_userid_content_img_from_article(article_id)
             article_user_id = article["user_id"]
             article_content = article["content"]
-            article_img = article["img"].split(',')[0] # 只获取文章的第一张图片
+            article_img = (article.get("img") or "").split(',')[0]  # 安全获取第一张图片，允许 img 为空
             # 获取评论用户的昵称，头像
             comment_user = await UserCRUD(self.session).get_user_username_avatar(user_id)
             comment_user_username = comment_user["username"]

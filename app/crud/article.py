@@ -61,6 +61,43 @@ class ArticleCRUD:
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise e
+    # 按标签倒序分页获取最新的文章（一页十条）
+    async def get_by_tag(self, tag: str, page: int = 1, page_size: int = 10) -> list[dict]:
+        """
+        按标签倒序分页查询文章（status为0）
+        参数:
+            tag: 标签
+            page: 页码，默认第一页
+            page_size: 每页数量，默认十条
+        返回:
+            list[dict]: 文章模型列表（字典形式）
+        """
+        result = await self.session.execute(
+            select(Article)
+            .filter(Article.status == 0, Article.tag == tag)
+            .order_by(Article.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        articles = result.scalars().all()
+        return [
+            {
+                "id": article.id,
+                "user_id": article.user_id,
+                "username": article.username,
+                "avatar": article.avatar,
+                "gender": article.gender,
+                "year": article.year,
+                "tag": article.tag,
+                "content": article.content,
+                "img": article.img,
+                "view_count": article.view_count,
+                "like_count": article.like_count,
+                "comment_count": article.comment_count,
+                "create_time": article.create_time.strftime("%Y-%m-%d %H:%M"),
+            }
+            for article in articles
+        ]
     # 按时间顺序分页获取文章
     async def get_by_page(self, page: int, page_size: int) -> list[dict]:
         """
@@ -264,6 +301,20 @@ class ArticleCRUD:
             article.like_count = max(0, article.like_count - 1)  # 防止负数
             self.session.add(article)
         return article
+    # 增加文章评论数（仅更新，不单独commit，适配事务）
+    async def increment_comment_count(self, article_id: int) -> bool:
+        """
+        增加文章评论数（仅更新，不单独commit，适配事务）
+        参数:
+            article_id: 文章ID
+        返回:
+            bool: 是否增加成功
+        """
+        article = await self.session.get(Article, article_id)
+        if article:
+            article.comment_count += 1
+            self.session.add(article)
+        return article is not None
     # 检查父评论是否存在
     async def check_parent_exists(self, parent_id: int) -> bool:
         """
@@ -295,21 +346,78 @@ class ArticleCRUD:
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise e
-    # 按时间顺序分页获取文章评论
+    # 按点赞量分页获取文章一级评论
     async def get_comments(self, article_id: int, page: int = 1, page_size: int = 5) -> list[dict]:
         """
-        按时间顺序分页获取文章评论（status为0）
+        按点赞量分页获取文章一级评论（status为0）
         参数:
             article_id: 文章ID
         返回:
             list[dict]: 评论列表
         """
-        offset = max(page - 1, 0) * page_size
         stmt = (
             select(ArticleComment)
-            .where(ArticleComment.article_id == article_id, ArticleComment.status == 0)
-            .order_by(ArticleComment.id)
-            .offset(offset)
+            .where(
+                ArticleComment.article_id == article_id, 
+                ArticleComment.parent_id == 0, 
+                ArticleComment.status == 0)
+            .order_by(ArticleComment.like_count.desc(), ArticleComment.id)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        result = await self.session.execute(stmt)
+        comments = result.scalars().all()
+        # 批量统计每条一级评论的二级评论数（核心：补充reply_count）
+        reply_counts = {}
+        if comments:
+            # 提取所有一级评论的ID
+            parent_ids = [c.id for c in comments]
+            # 聚合查询：统计每个parent_id对应的二级评论数
+            count_stmt = (
+                select(
+                    ArticleComment.parent_id, # 一级评论ID
+                    func.count(ArticleComment.id).label("reply_count")  # 二级评论数
+                )
+                .where(
+                    ArticleComment.parent_id.in_(parent_ids),  # 只统计当前页的一级评论
+                    ArticleComment.status == 0  # 只统计正常状态的二级评论
+                )
+                .group_by(ArticleComment.parent_id) # 按一级评论ID分组
+            )
+            count_result = await self.session.execute(count_stmt)
+            # 转换为 {parent_id: 回复数} 的字典
+            reply_counts = {row.parent_id: row.reply_count for row in count_result.all()}
+        # 组装返回数据（映射reply_count）
+        return [
+            {
+                "id": c.id,
+                "username": c.username,
+                "avatar": c.avatar,
+                "parent_id": c.parent_id,
+                "content": c.content,
+                "create_time": c.create_time.strftime("%Y-%m-%d %H:%M"),
+                "like_count": c.like_count,
+                "img": c.img or "",
+                "reply_count": reply_counts.get(c.id, 0)  # 从统计结果中获取，无则为0
+            }
+            for c in comments
+        ]
+    # 按点赞量分页获取文章二级评论
+    async def get_replies(self, parent_id: int, page: int = 1, page_size: int = 5) -> list[dict]:
+        """
+        按点赞量分页获取文章二级评论（status为0）
+        参数:
+            parent_id: 父评论ID
+        返回:
+            list[dict]: 评论列表
+        """
+        stmt = (
+            select(ArticleComment)
+            .where(
+                ArticleComment.parent_id == parent_id, 
+                ArticleComment.status == 0)
+            .order_by(ArticleComment.like_count.desc(), ArticleComment.id)
+            .offset((page - 1) * page_size)
             .limit(page_size)
         )
         result = await self.session.execute(stmt)
@@ -327,20 +435,6 @@ class ArticleCRUD:
             }
             for c in comments
         ]
-    
-    # 增加评论计数
-    async def increment_comment_count(self, article_id: int):
-        """
-        增加文章评论计数
-        参数:
-            article_id: 文章ID
-        返回:
-            None
-        """
-        article = await self.session.get(Article, article_id)
-        if article:
-            article.comment_count += 1
-            self.session.add(article)
     
     # 增加评论点赞计数
     async def increment_comment_like_count(self, comment_id: int):
