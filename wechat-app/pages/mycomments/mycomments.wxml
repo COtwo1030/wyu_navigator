@@ -16,13 +16,12 @@
             <view class="header-right">
               <view class="top-row">
                 <text class="username">{{item.username}}</text>
-                <text class="time">{{item.create_time}}</text>
               </view>
             </view>
           </view>
-          <view class="content">{{item.content}}</view>
+          <view class="content align-username">{{item.content}}</view>
           <block wx:if="{{item.imgs && item.imgs.length}}">
-            <view class="imgs-grid">
+            <view class="imgs-grid align-username">
               <block wx:for="{{item.imgs}}" wx:key="*this" wx:for-item="img" wx:for-index="idx">
                 <view wx:if="{{idx < 3}}" class="img-wrap" catchtap="onPreviewImages" data-id="{{item.article_id}}" data-idx="{{idx}}">
                   <image class="img-item" src="{{img}}" mode="aspectFill"></image>
@@ -31,6 +30,7 @@
               </block>
             </view>
           </block>
+          <text class="time align-username">{{item.create_time}}</text>
         </view>
       </view>
     </block>
