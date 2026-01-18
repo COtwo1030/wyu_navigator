@@ -19,10 +19,12 @@ Page({
         wx.hideLoading()
         if (res.statusCode === 200) {
           wx.showToast({ title: '验证码已发送', icon: 'success' })
+        } else if (res.statusCode === 422) {
+          wx.showToast({ title: '邮箱格式不对', icon: 'none' })
         } else if (res.statusCode === 400) {
-          wx.showToast({ title: '验证码发送频繁', icon: 'none' })
+          wx.showToast({ title: (res.data && res.data.detail) ? res.data.detail : '发送失败', icon: 'none' })
         } else {
-          wx.showToast({ title: '发送失败', icon: 'none' })
+          wx.showToast({ title: (res.data && res.data.detail) ? res.data.detail : '发送失败', icon: 'none' })
         }
       },
       fail: () => { wx.hideLoading(); wx.showToast({ title: '网络异常', icon: 'none' }) }
@@ -35,8 +37,12 @@ Page({
     const code = (this.data.code || '').trim()
     if (!email) return wx.showToast({ title: '请填写邮箱', icon: 'none' })
     if (!password) return wx.showToast({ title: '请填写密码', icon: 'none' })
+    if (password.length < 6 || password.length > 20) return wx.showToast({ title: '密码长度需6-20位', icon: 'none' })
     if (!confirm_password) return wx.showToast({ title: '请确认密码', icon: 'none' })
+    if (confirm_password.length < 6 || confirm_password.length > 20) return wx.showToast({ title: '确认密码长度需6-20位', icon: 'none' })
+    if (password !== confirm_password) return wx.showToast({ title: '两次输入的密码不一致', icon: 'none' })
     if (!code) return wx.showToast({ title: '请填写验证码', icon: 'none' })
+    if (code.length !== 4) return wx.showToast({ title: '验证码需4位', icon: 'none' })
     let username = (email.split('@')[0] || '').trim()
     if (username.length < 3) username = (`user_${Date.now()}`).slice(0, 20)
     else username = username.slice(0, 20)
@@ -49,6 +55,12 @@ Page({
       timeout: 10000,
       success: (res) => {
         wx.hideLoading()
+        if (res.statusCode === 422) {
+          return wx.showToast({ title: '邮箱格式不对', icon: 'none' })
+        }
+        if (res.statusCode === 400) {
+          return wx.showToast({ title: (res.data && res.data.detail) ? res.data.detail : '注册失败', icon: 'none' })
+        }
         if (res.statusCode !== 200) {
           return wx.showToast({ title: '注册失败', icon: 'none' })
         }

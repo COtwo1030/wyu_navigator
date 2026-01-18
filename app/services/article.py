@@ -54,7 +54,7 @@ class ArticleService:
             list[dict] 
         """
         articles = await ArticleCRUD(self.session).get_by_tag(tag, page, page_size)
-        logger.info(f"按标签 {tag} 获取第 {page} 页，每页 {page_size} 条文章: {articles}")
+        logger.info(f"按标签 {tag} 获取第 {page} 页")
         return articles
     
     # 按时间倒序分页获取最新的文章（一页十条）
@@ -68,7 +68,7 @@ class ArticleService:
             list[dict] 
         """
         articles = await ArticleCRUD(self.session).get_by_page(page, page_size)
-        logger.info(f"获取第 {page} 页，每页 {page_size} 条文章: {articles}")
+        logger.info(f"获取第 {page} 页文章")
         return articles
     # 查询指定文章详情
     async def get_by_articleid(self, article_id: int) -> dict:
@@ -389,15 +389,17 @@ class ArticleService:
         articles = await ArticleCRUD(self.session).get_by_ids(ids)
         return articles
     
-    # 查询用户的评论
-    async def get_comments_by_user_id(self, user_id: int) -> list[dict]:
+    # 按时间倒序分页查询用户的评论
+    async def get_comments_by_user_id(self, user_id: int, page: int, page_size: int) -> list[dict]:
         """
-        查询用户的评论
+        按时间倒序分页查询用户的评论
         参数:
             user_id: 用户ID
+            page: 页码
+            page_size: 每页数量
         返回:
             list[dict]: 评论列表
         """
-        comments = await ArticleCRUD(self.session).get_comments_by_user_id(user_id)
-        logger.info(f"用户 {user_id} 查询发表的评论")
+        comments = await ArticleCRUD(self.session).get_comments_by_user_id(user_id, page, page_size)
+        logger.info(f"用户 {user_id} 查询发表的评论，页码 {page}")
         return comments

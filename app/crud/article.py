@@ -651,12 +651,14 @@ class ArticleCRUD:
             for article in articles
         ]
 
-    # 查询用户的评论
-    async def get_comments_by_user_id(self, user_id: int) -> list[dict]:
+    # 按时间倒序分页查询用户的评论
+    async def get_comments_by_user_id(self, user_id: int, page: int, page_size: int) -> list[dict]:
         """
-        查询互动表获取用户的评论
+        按时间倒序分页查询互动表获取用户的评论
         参数:
             user_id: 用户ID
+            page: 页码
+            page_size: 每页数量
         返回:
             list[dict]: 评论列表
         """
@@ -664,6 +666,8 @@ class ArticleCRUD:
             select(ArticleComment)
             .where(ArticleComment.user_id == user_id, ArticleComment.status == 0)
             .order_by(ArticleComment.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
         result = await self.session.execute(stmt)
         comments = result.scalars().all()

@@ -5,11 +5,14 @@ page, .post { height: 100vh; display: flex; flex-direction: column; background: 
 .input { flex: 1; height: 44px; border-radius: 8px; background: #fff; padding: 0 12px; border: 1px solid #eee; }
 .textarea-wrap { margin-top: 8px; }
 .textarea { width: 100%; min-height: 160px; border-radius: 8px; background: #fff; padding: 8px 12px; border: 1px solid #eee; box-sizing: border-box; font-size: 14px; }
+.count-row { text-align: right; color: #999; font-size: 12px; margin-top: 4px; }
+.count-row.error { color: #f44336; font-weight: 500; }
 .btn { height: 44px; border-radius: 22px; border: none; background: #4CAF50; color: #fff; }
 .tag-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .tag-btn { height: 28px; padding: 0 10px; border-radius: 14px; background: #e9eef8; color: #2E6ADF; display: flex; align-items: center; justify-content: center; font-size: 12px; }
 .selected-tag { height: 28px; padding: 0 10px; border-radius: 14px; background: #fff2e8; color: #fa6400; border: 1px solid #ffd5b3; font-size: 12px; display: flex; align-items: center; }
 /* 上传图片区域：三列网格，上传图标与图片同尺寸 */
 .upload-grid { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
-.upload-item { width: calc((100% - 16px) / 3); height: 96px; border-radius: 8px; overflow: hidden; background: #eee; }
+.upload-item { width: calc((100% - 16px) / 3); height: 96px; border-radius: 8px; overflow: hidden; background: #eee; position: relative; }
 .upload-img { width: 100%; height: 100%; }
+.upload-del { position: absolute; right: 4px; top: 4px; width: 18px; height: 18px; border-radius: 9px; background: rgba(0,0,0,0.5); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; z-index: 3; }

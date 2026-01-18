@@ -189,10 +189,12 @@ async def get_liked_articles(
     articles = await ArticleService(session).get_articles_by_article_ids(page, page_size, article_ids)
     return articles
 
-# 查询用户的评论
-@router.get("/user/commentlist", status_code=200,description="查询用户的评论列表")
+# 按时间倒序分页查询用户的评论
+@router.get("/user/commentlist", status_code=200,description="按时间倒序分页查询用户的评论列表")
 async def get_user_comments(
     session: AsyncSession = Depends(get_session),
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
     user_id: int = Depends(get_current_user_id),
 ):
-    return await ArticleService(session).get_comments_by_user_id(user_id)
+    return await ArticleService(session).get_comments_by_user_id(user_id, page, page_size)

@@ -2,13 +2,13 @@
 <view class="login">
   <view class="form">
     <view class="input-wrap">
-      <image class="icon" src="/images/tabbar/email.png" mode="aspectFit"></image>
+      <image class="icon" src="/images/tabbar/message.png" mode="aspectFit"></image>
       <input class="input" type="text" placeholder="请输入邮箱" value="{{email}}" bindinput="onEmailInput" />
     </view>
 
     <block wx:if="{{isPwdMode}}">
       <view class="input-wrap">
-        <image class="icon" src="/{{pwdVisible ? 'images/tabbar/密码可见.png' : 'images/tabbar/密码不可见.png'}}" mode="aspectFit" bindtap="togglePwdVisible"></image>
+        <image class="icon" src="{{pwdVisible ? '/images/tabbar/appear.png' : '/images/tabbar/disappear.png'}}" mode="aspectFit" bindtap="togglePwdVisible"></image>
         <input class="input" password="{{!pwdVisible}}" placeholder="请输入密码" value="{{password}}" bindinput="onPasswordInput" />
       </view>
     </block>

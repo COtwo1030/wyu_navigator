@@ -6,15 +6,18 @@
       <view wx:if="{{tag}}" class="selected-tag">{{tag}}</view>
     </view>
     <view class="textarea-wrap">
-      <textarea class="textarea" placeholder="请输入内容" value="{{content}}" auto-height="true" bindinput="onContentInput" maxlength="5000"></textarea>
+      <textarea class="textarea" placeholder="请输入内容" auto-height="true" bindinput="onContentInput" maxlength="5000"></textarea>
+      <view class="count-row error" wx:if="{{exceed}}">超过字数上限</view>
+      <view class="count-row" wx:else>还能写 {{remaining}} 字</view>
     </view>
     <view class="upload-grid">
-      <block wx:for="{{images}}" wx:key="*this" wx:for-item="img">
+      <block wx:for="{{images}}" wx:key="*this" wx:for-item="img" wx:for-index="idx">
         <view class="upload-item">
           <image class="upload-img" src="{{img}}" mode="aspectFill"></image>
+          <view class="upload-del" catchtap="onRemoveImage" data-idx="{{idx}}">×</view>
         </view>
       </block>
-      <view class="upload-item add" catchtap="onUploadTap">
+      <view wx:if="{{images.length < 10}}" class="upload-item add" catchtap="onUploadTap">
         <image class="upload-img" src="/images/tabbar/upload.png" mode="aspectFit"></image>
       </view>
     </view>

@@ -18,15 +18,17 @@ Page({
       method: 'POST',
       timeout: 10000,
       success: (res) => {
-        wx.hideLoading()
-        if (res.statusCode === 200) {
-          wx.showToast({ title: '验证码已发送', icon: 'success' })
-        } else if (res.statusCode === 400) {
-          wx.showToast({ title: '验证码发送频繁，请十分钟后重试', icon: 'none' })
-        } else {
-          wx.showToast({ title: '发送失败', icon: 'none' })
-        }
-      },
+          wx.hideLoading()
+          if (res.statusCode === 200) {
+            wx.showToast({ title: '验证码已发送', icon: 'success' })
+          } else if (res.statusCode === 422) {
+            wx.showToast({ title: '邮箱格式不对', icon: 'none' })
+          } else if (res.statusCode === 400) {
+            wx.showToast({ title: (res.data && res.data.detail) ? res.data.detail : '发送失败', icon: 'none' })
+          } else {
+            wx.showToast({ title: (res.data && res.data.detail) ? res.data.detail : '发送失败', icon: 'none' })
+          }
+        },
       fail: () => { wx.hideLoading(); wx.showToast({ title: '网络异常', icon: 'none' }) }
     })
   },
@@ -36,6 +38,7 @@ Page({
     if (this.data.isPwdMode) {
       const password = (this.data.password || '').trim()
       if (!password) return wx.showToast({ title: '请填写密码', icon: 'none' })
+      if (password.length < 6 || password.length > 20) return wx.showToast({ title: '密码长度需6-20位', icon: 'none' })
       wx.showLoading({ title: '登录中...' })
       wx.request({
         url: config.api.auth.pswlogin,
@@ -45,6 +48,12 @@ Page({
         timeout: 10000,
         success: (res) => {
           wx.hideLoading()
+          if (res.statusCode === 422) {
+            return wx.showToast({ title: '邮箱格式不对', icon: 'none' })
+          }
+          if (res.statusCode === 400) {
+            return wx.showToast({ title: (res.data && res.data.detail) ? res.data.detail : '登录失败', icon: 'none' })
+          }
           if (res.statusCode !== 200 || !res.data?.access_token) {
             return wx.showToast({ title: '登录失败', icon: 'none' })
           }
@@ -64,6 +73,7 @@ Page({
     } else {
       const code = (this.data.code || '').trim()
       if (!code) return wx.showToast({ title: '请填写验证码', icon: 'none' })
+      if (code.length !== 4) return wx.showToast({ title: '验证码需4位', icon: 'none' })
       wx.showLoading({ title: '登录中...' })
       wx.request({
         url: config.api.auth.emaillogin,
@@ -73,6 +83,12 @@ Page({
         timeout: 10000,
         success: (res) => {
           wx.hideLoading()
+          if (res.statusCode === 422) {
+            return wx.showToast({ title: '邮箱格式不对', icon: 'none' })
+          }
+          if (res.statusCode === 400) {
+            return wx.showToast({ title: (res.data && res.data.detail) ? res.data.detail : '登录失败', icon: 'none' })
+          }
           if (res.statusCode !== 200 || !res.data?.access_token) {
             return wx.showToast({ title: '登录失败', icon: 'none' })
           }

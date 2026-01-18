@@ -26,6 +26,11 @@ class AuthService:
         返回:
             dict: 包含access_token和token_type的字典，以及用户名
         """
+        # 检查邮箱是否存在
+        email_exists = await AuthCRUD(self.session).is_email_registered(email=data.email)
+        if not email_exists:
+            logger.warning(f"登录失败: 邮箱不存在 - {data.email}")
+            raise HTTPException(status_code=400, detail="邮箱未注册")
         # 查询验证码
         EmailCode = await EmailCodeCRUD(self.session).search_code(email=data.email, code=data.code)
         if EmailCode is None:
@@ -114,7 +119,7 @@ class AuthService:
         # 查询邮箱是否存在
         if not await AuthCRUD(self.session).is_email_registered(email=data.email):
             logger.warning(f"重置密码失败: 邮箱不存在 - {data.email}")
-            raise HTTPException(status_code=400, detail="邮箱不存在")
+            raise HTTPException(status_code=400, detail="邮箱未注册")
         # 查询验证码是否存在
         EmailCode = await EmailCodeCRUD(self.session).search_code(email=data.email, code=data.code)
         if EmailCode is None:

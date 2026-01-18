@@ -3,10 +3,14 @@ Page({
   data: {
     content: '',
     tag: '',
-    images: []
+    images: [],
+    remaining: 5000,
+    exceed: false
   },
   onContentInput(e) {
-    this.setData({ content: e.detail.value })
+    const text = e.detail.value || ''
+    const remaining = Math.max(0, 5000 - text.length)
+    this.setData({ content: text, remaining, exceed: remaining === 0 })
   },
   onPickTag() {
     wx.showActionSheet({
@@ -24,9 +28,11 @@ Page({
     const content = (this.data.content || '').trim()
     const tag = (this.data.tag || '').trim()
     if (!content) return wx.showToast({ title: '请填写内容', icon: 'none' })
+    if (content.length > 5000) return wx.showToast({ title: '内容最多5000字', icon: 'none' })
     const payload = { content }
     if (tag) payload.tag = tag
     const imgs = (this.data.images || [])
+    if (imgs.length > 10) return wx.showToast({ title: '图片最多上传10张', icon: 'none' })
     if (imgs.length > 0) payload.img = imgs.join(',')
     const token = wx.getStorageSync('token')
     if (!token) { wx.showToast({ title: '请先登录', icon: 'none' }); return wx.navigateTo({ url: '/pages/login/login' }) }
@@ -61,17 +67,23 @@ Page({
   onUploadTap() {
     const token = wx.getStorageSync('token') || ''
     if (!token) { wx.showToast({ title: '请先登录', icon: 'none' }); wx.navigateTo({ url: '/pages/login/login' }); return }
+    const cur = (this.data.images || []).length
+    const remain = 10 - cur
+    if (remain <= 0) { wx.showToast({ title: '图片最多上传10张', icon: 'none' }); return }
     wx.chooseImage({
-      count: 9,
+      count: Math.min(remain, 9),
       sizeType: ['compressed'],
       sourceType: ['album','camera'],
       success: async (sel) => {
         const paths = sel.tempFilePaths || []
         if (!paths.length) return
+        const cur2 = (this.data.images || []).length
+        const remain2 = 10 - cur2
+        const todoPaths = paths.slice(0, Math.max(0, remain2))
         wx.showLoading({ title: '上传中...' })
         try {
-          for (let i = 0; i < paths.length; i++) {
-            const filePath = paths[i]
+          for (let i = 0; i < todoPaths.length; i++) {
+            const filePath = todoPaths[i]
             const ext = (filePath.match(/\.(jpg|jpeg|png)$/i) || [])[0] || '.jpg'
             const ct = (/\.png$/i.test(ext)) ? 'image/png' : 'image/jpeg'
             const key = `${Date.now()}_${Math.floor(Math.random()*100000)}${ext}`
@@ -131,5 +143,13 @@ Page({
         fail: reject
       })
     })
+  },
+  onRemoveImage(e) {
+    const idx = Number(e.currentTarget.dataset.idx)
+    const imgs = (this.data.images || []).slice()
+    if (Number.isFinite(idx) && idx >= 0 && idx < imgs.length) {
+      imgs.splice(idx, 1)
+      this.setData({ images: imgs })
+    }
   }
 })
